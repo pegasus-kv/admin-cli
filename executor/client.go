@@ -72,9 +72,6 @@ func NewClient(writer io.Writer, metaAddrs []string) *Client {
 		Writer: writer,
 		Meta:   meta,
 		Nodes:  util.NewPegasusNodeManager(metaAddrs, replicaAddrs),
+		Perf:   aggregate.NewPerfClient(metaAddrs),
 	}
-}
-
-func (client *Client) GetPerfCounterClient(addr string) (*aggregate.PerfSession, error) {
-	return nil, nil
 }

@@ -58,17 +58,17 @@ Write:
     unit: size
 `
 
-// The default statFormatter if no unit is specified
-func defaultStatFormatter(v float64) string {
+// The default StatFormatter if no unit is specified
+func DefaultStatFormatter(v float64) string {
 	return humanize.SI(v, "")
 }
 
 // Used for counter with `"unit" : "size"`.
-func sizeStatFormatter(v float64) string {
+func SizeStatFormatter(v float64) string {
 	return humanize.Bytes(uint64(v))
 }
 
-type statFormatter func(float64) string
+type StatFormatter func(float64) string
 
 // PrintTableStatsTabular prints table stats in a number of sections,
 // according to the predefined template.
@@ -85,17 +85,17 @@ func PrintTableStatsTabular(writer io.Writer, tables map[int32]*aggregate.TableS
 		table.Render()
 
 		header := []string{"AppID", "Name", "Partitions"}
-		var formatters []statFormatter
+		var formatters []StatFormatter
 		for columnName, attrs := range columns.(map[interface{}]interface{}) {
 			header = append(header, columnName.(string))
 
 			if attrs == nil {
-				formatters = append(formatters, defaultStatFormatter)
+				formatters = append(formatters, DefaultStatFormatter)
 			} else {
 				attrsMap := attrs.(map[interface{}]interface{})
 				unit := attrsMap["unit"]
 				if unit == "size" {
-					formatters = append(formatters, sizeStatFormatter)
+					formatters = append(formatters, SizeStatFormatter)
 				} else {
 					panic(fmt.Sprintf("invalid unit %s in template", unit))
 				}

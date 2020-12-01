@@ -20,6 +20,7 @@
 package executor
 
 import (
+	"admin-cli/executor/util"
 	"admin-cli/helper"
 	"context"
 	"fmt"
@@ -92,10 +93,7 @@ func queryDiskCapacity(client *Client, replicaServer string, resp *radmin.QueryD
 	var nodeCapacityInfos []nodeCapacityStruct
 	var replicaCapacityInfos []replicaCapacityStruct
 
-	perfClient, err := client.GetPerfCounterClient(replicaServer)
-	if err != nil {
-		return err
-	}
+	perfSession := client.Nodes.GetPerfSession(replicaServer, session.NodeTypeReplica)
 
 	for _, diskInfo := range resp.DiskInfos {
 		// pass disk tag means query one disk detail capacity of replica
@@ -107,7 +105,7 @@ func queryDiskCapacity(client *Client, replicaServer string, resp *radmin.QueryD
 						replicaCapacityInfos = append(replicaCapacityInfos, replicaCapacityStruct{
 							Replica:  gpidStr,
 							Status:   replicaStatus,
-							Capacity: float64(helper.GetReplicaCounterValue(perfClient, "disk.storage.sst(MB)", gpidStr)),
+							Capacity: float64(util.GetPartitionStat(perfSession, "disk.storage.sst(MB)", gpidStr)),
 						})
 					}
 				}

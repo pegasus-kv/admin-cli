@@ -35,7 +35,6 @@ func init() {
 		Run: func(c *grumble.Context) error {
 			return executor.ShowNodesStat(
 				pegasusClient,
-				c.Flags.Bool("detail"),
 			)
 		},
 	})

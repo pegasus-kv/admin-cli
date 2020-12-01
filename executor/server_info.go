@@ -39,7 +39,7 @@ func ServerInfo(client *Client) error {
 	tabular := tablewriter.NewWriter(client)
 	tabular.SetAutoFormatHeaders(false)
 	tabular.SetAlignment(tablewriter.ALIGN_CENTER)
-	tabular.SetColWidth(150)
+	tabular.SetAutoWrapText(false)
 	tabular.SetHeader([]string{"Server", "Node", "Version"})
 
 	for n, result := range results {
