@@ -105,7 +105,7 @@ func PrintTableStatsTabular(writer io.Writer, tables map[int32]*aggregate.TableS
 		tabWriter := tablewriter.NewWriter(writer)
 		tabWriter.SetBorder(false)
 		tabWriter.SetHeader(header)
-		tabWriter.SetAlignment(tablewriter.ALIGN_CENTER)
+		tabWriter.SetAlignment(tablewriter.ALIGN_LEFT)
 		for _, tb := range tables {
 			// each table displays as a row
 			var row []string

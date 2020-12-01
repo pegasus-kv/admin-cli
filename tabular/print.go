@@ -28,7 +28,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-// NewCfg creates a tablewriter.Table and allows customizing the table.
+// New creates a tablewriter.Table and allows customizing the table.
 //
 // Each element should be a simple struct (not pointer) with a number of fields.
 // Each field corresponds to a column in the table, the field must have json tag.
@@ -45,9 +45,9 @@ import (
 //  tabular.Print(tables)
 // ```
 //
-func NewCfg(writer io.Writer, valueList []interface{}, configurer func(*tablewriter.Table)) *tablewriter.Table {
+func New(writer io.Writer, valueList []interface{}, configurer func(*tablewriter.Table)) *tablewriter.Table {
 	tabWriter := tablewriter.NewWriter(writer)
-	tabWriter.SetAlignment(tablewriter.ALIGN_CENTER)
+	tabWriter.SetAlignment(tablewriter.ALIGN_LEFT)
 	header := getHeaderFromValueList(valueList)
 	tabWriter.SetHeader(header)
 	var headerColors []tablewriter.Colors
@@ -77,14 +77,9 @@ func NewCfg(writer io.Writer, valueList []interface{}, configurer func(*tablewri
 	return tabWriter
 }
 
-// New creates a tablewriter.Table using the default settings.
-func New(writer io.Writer, valueList []interface{}) *tablewriter.Table {
-	return NewCfg(writer, valueList, nil)
-}
-
 // Print out the list of elements in tabular form.
 func Print(writer io.Writer, valueList []interface{}) {
-	New(writer, valueList).Render()
+	New(writer, valueList, nil).Render()
 }
 
 func getHeaderFromValueList(valueList []interface{}) []string {
