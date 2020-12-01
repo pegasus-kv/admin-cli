@@ -20,13 +20,13 @@
 package executor
 
 import (
-	"github.com/pegasus-kv/admin-cli/tabular"
 	"context"
 	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/XiaoMi/pegasus-go-client/idl/admin"
+	"github.com/pegasus-kv/admin-cli/tabular"
 )
 
 // ListTables command.
@@ -49,11 +49,15 @@ func ListTables(client *Client, useJSON bool) error {
 	}
 	var tbList []interface{}
 	for _, tb := range resp.Infos {
+		createTime := "unknown"
+		if tb.CreateSecond != 0 {
+			createTime = time.Unix(tb.CreateSecond, 0).Format("2006-01-02")
+		}
 		tbList = append(tbList, tableStruct{
 			AppID:          tb.AppID,
 			Name:           tb.AppName,
 			PartitionCount: tb.PartitionCount,
-			CreateTime:     time.Unix(tb.CreateSecond, 0).Format("2006-01-02"),
+			CreateTime:     createTime,
 			Envs:           tb.Envs,
 		})
 	}
