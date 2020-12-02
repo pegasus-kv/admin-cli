@@ -65,13 +65,13 @@ Request:
   counter: replica*app.pegasus*multi_put_bytes
 `
 
-func ShowNodesStat(client *Client) error {
+func ShowNodesStat(client *Client, detail bool) error {
 	nodesStats := util.GetNodeStat(client.Perf)
-	printNodesStatsTabular(client, nodesStats)
+	printNodesStatsTabular(client, nodesStats, detail)
 	return nil
 }
 
-func printNodesStatsTabular(client *Client, nodes map[string]*aggregate.NodeStat) {
+func printNodesStatsTabular(client *Client, nodes map[string]*aggregate.NodeStat, detail bool) {
 	var sections map[string]interface{}
 	err := yaml.Unmarshal([]byte(nodeStatsTemplate), &sections)
 	if err != nil {
@@ -80,6 +80,9 @@ func printNodesStatsTabular(client *Client, nodes map[string]*aggregate.NodeStat
 
 	for sect, columns := range sections {
 		// print section
+		if !detail && sect != "Usage" {
+			continue
+		}
 		fmt.Printf("[%s]\n", sect)
 
 		header := []string{"Node"}
