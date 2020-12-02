@@ -70,7 +70,7 @@ func ListNodes(client *Client, table string) error {
 	}
 	nodesSortByAddress(nodeList)
 
-	tabular.CreateTabWriter(client, nodeList, func(t *tablewriter.Table) {
+	tabular.New(client, nodeList, func(t *tablewriter.Table) {
 		footerWithTotalCount(t, nodeList)
 	}).Render()
 	return nil

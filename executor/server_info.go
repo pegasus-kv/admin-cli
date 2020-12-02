@@ -57,7 +57,7 @@ func ServerInfo(client *Client) error {
 		}
 	}
 
-	tabular.CreateTabWriter(client, rowList, func(table *tablewriter.Table) {
+	tabular.New(client, rowList, func(table *tablewriter.Table) {
 		table.SetAutoWrapText(false)
 	}).Render()
 	return nil
