@@ -21,9 +21,8 @@ package util
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/pegasus-kv/collector/aggregate"
+	"strings"
 )
 
 func GetPartitionStat(perfSession *aggregate.PerfSession, counter string, gpid string) int64 {
@@ -39,45 +38,29 @@ func GetPartitionStat(perfSession *aggregate.PerfSession, counter string, gpid s
 	return int64(counters[0].Value)
 }
 
-func GetNodeStat(perfClient *aggregate.PerfClient, partitionCounterNames string, nodeCounterNames string) map[string]*aggregate.NodeStat {
-	var nodeStats = make(map[string]*aggregate.NodeStat)
+func GetNodeStat(perfClient *aggregate.PerfClient) map[string]*aggregate.NodeStat {
+	var nodesStats = make(map[string]*aggregate.NodeStat)
 
-	if len(partitionCounterNames) != 0 {
-		partitionStats := perfClient.GetPartitionStats()
-		for _, partition := range partitionStats {
-			fileNodesStatsMap(partition.Addr, nodeStats, partition.Stats, partitionCounterNames)
-		}
-	}
-
-	if len(nodeCounterNames) != 0 {
-		nodesStats := perfClient.GetNodeStats("replica")
-		for _, node := range nodesStats {
-			fileNodesStatsMap(node.Addr, nodeStats, node.Stats, nodeCounterNames)
-		}
-	}
-	return nodeStats
-}
-
-func fileNodesStatsMap(addr string, nodeStats map[string]*aggregate.NodeStat, data map[string]float64, filters string) {
-	for name, value := range data {
-		name = shortName(name)
-		if !strings.Contains(filters, name) {
-			continue
-		}
-		if nodeStats[addr] == nil {
-			nodeStats[addr] = &aggregate.NodeStat{
-				Addr:  addr,
-				Stats: make(map[string]float64),
+	nodes := perfClient.GetNodeStats("replica")
+	for _, node := range nodes {
+		for name, value := range node.Stats {
+			name = getCounterName(name)
+			if nodesStats[node.Addr] == nil {
+				nodesStats[node.Addr] = &aggregate.NodeStat{
+					Addr:  node.Addr,
+					Stats: make(map[string]float64),
+				}
 			}
+			nodesStats[node.Addr].Stats[name] += value
 		}
-		nodeStats[addr].Stats[name] = value
 	}
+	return nodesStats
 }
 
-func shortName(name string) string {
-	res := strings.Split(name, "*")
-	if len(res) == 0 {
-		return name
+func getCounterName(name string) string {
+	ret := strings.Split(name, "@")
+	if len(ret) != 0 {
+		return ret[0]
 	}
-	return res[len(res)-1]
+	return name
 }

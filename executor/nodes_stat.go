@@ -21,91 +21,90 @@ package executor
 
 import (
 	"admin-cli/executor/util"
+	"fmt"
 	"github.com/ghodss/yaml"
-	"github.com/olekukonko/tablewriter"
 	"github.com/pegasus-kv/collector/aggregate"
-	"strconv"
 )
 
 var nodeStatsTemplate = `---
 Usage:
-  disk.capacity.total(MB): DiskTotal
-  disk.available.total(MB): DiskAvailable
-  disk.available.total.ratio: DiskAvaRatio
-  memused.res(MB): memUsed
-  rdb_block_cache_memory_usage: BlockCache
-  rdb_index_and_filter_blocks_mem_usage: IndexMem
+ DiskTotal:
+  counter: replica*eon.replica_stub*disk.capacity.total(MB)
+  unit: MB
+ DiskAvailable:
+  counter: replica*eon.replica_stub*disk.available.total(MB)
+  unit: MB
+ DiskAvaRatio(%):
+  counter: replica*eon.replica_stub*disk.available.total.ratio
+ MemUsed:
+  counter: replica*server*memused.res(MB)
+  unit: MB
+ BlockCache:
+  counter: replica*app.pegasus*rdb.block_cache.memory_usage
+  unit: byte
+ IndexMem:
+  counter: replica*app.pegasus*rdb.index_and_filter_blocks.memory_usage
+  unit: byte
 Request:
-  get_qps: Get
-  multi_get_qps: Mget
-  put_qps: Put
-  multi_put_qps: Mput
-  get_bytes: GetBytes
-  multi_get_bytes: MGetBytes
-  put_bytes: PutBytes
-  multi_put_bytes: MputBytes
+ Get:
+  counter: replica*app.pegasus*get_qps
+ Mget:
+  counter: replica*app.pegasus*multi_get_qps
+ Put:
+  counter: replica*app.pegasus*put_qps
+ Mput:
+  counter: replica*app.pegasus*multi_put_qps
+ GetBytes:
+  counter: replica*app.pegasus*get_bytes
+ MGetBytes:
+  counter: replica*app.pegasus*multi_get_bytes
+ PutBytes:
+  counter: replica*app.pegasus*put_bytes
+ MputBytes:
+  counter: replica*app.pegasus*multi_put_bytes
 `
 
 func ShowNodesStat(client *Client) error {
 	var nodesStats map[string]*aggregate.NodeStat
 
-	partitionCounters := `
-  	get_qps: Get
-  	multi_get_qps
-    put_qps: Put
-  	multi_put_qps
-  	get_bytes
-  	multi_get_bytes
-  	put_bytes
-  	multi_put_bytes
-  	rdb_block_cache_memory_usage
-  	rdb_index_and_filter_blocks_mem_usage
-`
-
-	nodeCounters := `
-  	disk.capacity.total(MB): DiskTotal
-  	disk.available.total(MB): DiskAvailable
-  	disk.available.total.ratio: DiskAvaRatio
-  	memused.res(MB): memUsed
-`
-
-	nodesStats = util.GetNodeStat(client.Perf, partitionCounters, nodeCounters)
+	nodesStats = util.GetNodeStat(client.Perf)
 	printNodesStatsTabular(client, nodesStats)
 	return nil
 }
 
 func printNodesStatsTabular(client *Client, nodes map[string]*aggregate.NodeStat) {
 	var sections map[string]interface{}
-	_ = yaml.Unmarshal([]byte(nodeStatsTemplate), &sections)
+	err := yaml.Unmarshal([]byte(nodeStatsTemplate), &sections)
+	if err != nil {
+		panic(err)
+	}
 
 	for sect, columns := range sections {
 		// print section
-		table := tablewriter.NewWriter(client.Writer)
-		table.SetBorders(tablewriter.Border{Left: false, Right: false, Top: true, Bottom: false})
-		table.SetRowSeparator("=")
-		table.SetHeader([]string{sect})
-		table.Render()
+		fmt.Printf("[%s]\n", sect)
 
-		var keys []string
 		header := []string{"Node"}
+		var counters []map[string]interface{}
+		var formatters []util.StatFormatter
 		for key, attrs := range columns.(map[string]interface{}) {
-			keys = append(keys, key)
-			header = append(header, attrs.(string))
+			attrsMap := attrs.(map[string]interface{})
+
+			header = append(header, key)
+			counters = append(counters, attrsMap)
+			formatters = util.FormatStat(attrsMap, formatters)
 		}
 
-		tabWriter := tablewriter.NewWriter(client.Writer)
+		tabWriter := util.NewTabWriter(client.Writer)
 		tabWriter.SetHeader(header)
-		tabWriter.SetAutoFormatHeaders(false)
 		for _, node := range nodes {
 			// each table displays as a row
 			var row []string
 			row = append(row, client.Nodes.MustGetReplica(node.Addr).CombinedAddr())
-			for _, key := range keys {
-				row = append(row, strconv.FormatFloat(node.Stats[key], 'f', -1, 64))
+			for i, kv := range counters {
+				row = append(row, formatters[i](node.Stats[kv["counter"].(string)]))
 			}
 			tabWriter.Append(row)
 		}
 		tabWriter.Render()
-		//_, _ = fmt.Fprintln(client.Writer)
 	}
 }

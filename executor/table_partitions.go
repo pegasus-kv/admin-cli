@@ -20,7 +20,7 @@
 package executor
 
 import (
-	"admin-cli/tabular"
+	"admin-cli/executor/util"
 	"context"
 	"strings"
 	"time"
@@ -60,6 +60,6 @@ func ShowTablePartitions(client *Client, tableName string) error {
 		partitions = append(partitions, p)
 	}
 
-	tabular.Print(client, partitions)
+	util.Print(client, partitions)
 	return nil
 }

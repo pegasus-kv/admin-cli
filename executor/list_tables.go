@@ -20,7 +20,7 @@
 package executor
 
 import (
-	"admin-cli/tabular"
+	"admin-cli/executor/util"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -66,6 +66,6 @@ func ListTables(client *Client, useJSON bool) error {
 	}
 
 	// formats into tabular
-	tabular.Print(client, tbList)
+	util.Print(client, tbList)
 	return nil
 }

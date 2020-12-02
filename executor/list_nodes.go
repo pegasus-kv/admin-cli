@@ -20,7 +20,7 @@
 package executor
 
 import (
-	"admin-cli/tabular"
+	"admin-cli/executor/util"
 	"context"
 	"fmt"
 	"time"
@@ -67,7 +67,7 @@ func ListNodes(client *Client, table string) error {
 		nodeList = append(nodeList, *n)
 	}
 
-	tbWriter := tabular.New(client, nodeList)
+	tbWriter := util.New(client, nodeList)
 	footerWithTotalCount(tbWriter, nodeList)
 	tbWriter.Render()
 	return nil

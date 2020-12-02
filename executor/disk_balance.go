@@ -20,7 +20,7 @@
 package executor
 
 import (
-	"admin-cli/helper"
+	"admin-cli/executor/util"
 	"context"
 	"fmt"
 	"time"
@@ -33,12 +33,12 @@ func DiskMigrate(client *Client, replicaServer string, pidStr string, from strin
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	var addr, err = helper.Resolve(replicaServer, helper.Host2Addr)
+	var addr, err = util.Resolve(replicaServer, util.Host2Addr)
 	if err == nil {
 		replicaServer = addr
 	}
 
-	pid, err := helper.Str2Gpid(pidStr)
+	pid, err := util.Str2Gpid(pidStr)
 	if err != nil {
 		return err
 	}

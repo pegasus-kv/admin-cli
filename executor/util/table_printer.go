@@ -17,10 +17,11 @@
  * under the License.
  */
 
-package tabular
+package util
 
 import (
 	"fmt"
+	"github.com/dustin/go-humanize"
 	"io"
 	"reflect"
 	"strings"
@@ -45,8 +46,7 @@ import (
 // ```
 //
 func New(writer io.Writer, valueList []interface{}) *tablewriter.Table {
-	tabWriter := tablewriter.NewWriter(writer)
-	tabWriter.SetAlignment(tablewriter.ALIGN_CENTER)
+	tabWriter := NewTabWriter(writer)
 	header := getHeaderFromValueList(valueList)
 	tabWriter.SetHeader(header)
 	var headerColors []tablewriter.Colors
@@ -68,6 +68,13 @@ func New(writer io.Writer, valueList []interface{}) *tablewriter.Table {
 		tabWriter.Append(row)
 	}
 
+	return tabWriter
+}
+
+func NewTabWriter(writer io.Writer) *tablewriter.Table {
+	tabWriter := tablewriter.NewWriter(writer)
+	tabWriter.SetAlignment(tablewriter.ALIGN_LEFT)
+	tabWriter.SetAutoFormatHeaders(false)
 	return tabWriter
 }
 
@@ -97,3 +104,32 @@ func formatColumnName(jsonTagName string) string {
 	}
 	return strings.Join(words, "\n")
 }
+
+func FormatStat(attrsMap map[string]interface{}, formatters []StatFormatter) []StatFormatter {
+	if attrsMap["unit"] == nil {
+		formatters = append(formatters, DefaultStatFormatter)
+	} else if attrsMap["unit"] == "byte" {
+		formatters = append(formatters, ByteStatFormatter)
+	} else if attrsMap["unit"] == "MB" {
+		formatters = append(formatters, MegabyteStatFormatter)
+	} else {
+		panic(fmt.Sprintf("invalid unit %s in template", attrsMap["unit"]))
+	}
+	return formatters
+}
+
+// The default StatFormatter if no unit is specified
+func DefaultStatFormatter(v float64) string {
+	return humanize.SI(v, "")
+}
+
+// Used for counter with `"unit" : "size"`.
+func ByteStatFormatter(v float64) string {
+	return humanize.IBytes(uint64(v))
+}
+
+func MegabyteStatFormatter(v float64) string {
+	return humanize.IBytes(uint64(v) << 20)
+}
+
+type StatFormatter func(float64) string

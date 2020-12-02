@@ -21,7 +21,6 @@ package executor
 
 import (
 	"admin-cli/executor/util"
-	"admin-cli/helper"
 	"context"
 	"fmt"
 	"strconv"
@@ -41,11 +40,12 @@ const (
 )
 
 // QueryDiskInfo command
+// TODO(jiashuo1) need refactor
 func QueryDiskInfo(client *Client, infoType DiskInfoType, replicaServer string, tableName string, diskTag string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	var addr, err = helper.Resolve(replicaServer, helper.Host2Addr)
+	var addr, err = util.Resolve(replicaServer, util.Host2Addr)
 	if err == nil {
 		replicaServer = addr
 	}
