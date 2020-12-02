@@ -21,22 +21,23 @@ package util
 
 import (
 	"fmt"
-	"github.com/dustin/go-humanize"
 	"io"
 	"reflect"
 	"strings"
 
+	"github.com/dustin/go-humanize"
 	"github.com/olekukonko/tablewriter"
 )
 
-// New creates a tablewrtier.Table that's filled with the content.
+// CreateTabWriter creates a tablewriter.Table and allows customizing the table.
+//
 // Each element should be a simple struct (not pointer) with a number of fields.
 // Each field corresponds to a column in the table, the field must have json tag.
 // The tag name is the column name in the table header.
 //
 // For example:
 // ```
-//	type tableStruct struct {
+//  type tableStruct struct {
 //    PartitionCount int    `json:"partition_count"`
 //    TableName      string `json:"name"`
 //  }
@@ -45,7 +46,8 @@ import (
 //  tabular.Print(tables)
 // ```
 //
-func New(writer io.Writer, valueList []interface{}) *tablewriter.Table {
+
+func CreateTabWriter(writer io.Writer, valueList []interface{}, configurer func(*tablewriter.Table)) *tablewriter.Table {
 	tabWriter := NewTabWriter(writer)
 	header := getHeaderFromValueList(valueList)
 	tabWriter.SetHeader(header)
@@ -54,6 +56,11 @@ func New(writer io.Writer, valueList []interface{}) *tablewriter.Table {
 		headerColors = append(headerColors, tablewriter.Colors{tablewriter.Bold})
 	}
 	tabWriter.SetHeaderColor(headerColors...)
+
+	// could replace the default settings
+	if configurer != nil {
+		configurer(tabWriter)
+	}
 
 	for _, val := range valueList {
 		// each value displays as a row
@@ -80,7 +87,7 @@ func NewTabWriter(writer io.Writer) *tablewriter.Table {
 
 // Print out the list of elements in tabular form.
 func Print(writer io.Writer, valueList []interface{}) {
-	New(writer, valueList).Render()
+	CreateTabWriter(writer, valueList, nil).Render()
 }
 
 func getHeaderFromValueList(valueList []interface{}) []string {

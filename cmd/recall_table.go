@@ -20,10 +20,10 @@
 package cmd
 
 import (
-	"admin-cli/executor"
-	"admin-cli/shell"
 	"fmt"
 	"github.com/desertbit/grumble"
+	"github.com/pegasus-kv/admin-cli/executor"
+	"github.com/pegasus-kv/admin-cli/shell"
 )
 
 func init() {

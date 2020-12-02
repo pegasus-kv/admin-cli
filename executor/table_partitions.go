@@ -20,8 +20,8 @@
 package executor
 
 import (
-	"admin-cli/executor/util"
 	"context"
+	"github.com/pegasus-kv/admin-cli/executor/util"
 	"strings"
 	"time"
 )

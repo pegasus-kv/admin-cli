@@ -20,9 +20,9 @@
 package main
 
 import (
-	"admin-cli/cmd"
-	"admin-cli/shell"
 	"fmt"
+	"github.com/pegasus-kv/admin-cli/cmd"
+	"github.com/pegasus-kv/admin-cli/shell"
 	"net"
 	"strings"
 

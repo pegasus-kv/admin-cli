@@ -152,7 +152,7 @@ func (m *PegasusNodeManager) GetNode(addr string, ntype session.NodeType) (*Pega
 	var err error
 	switch ntype {
 	case session.NodeTypeMeta:
-		err = m.validateReplicaAddress(addr)
+		err = m.validateMetaAddress(addr)
 	case session.NodeTypeReplica:
 		err = m.validateReplicaAddress(addr)
 	}
@@ -194,7 +194,7 @@ func (m *PegasusNodeManager) validateReplicaAddress(addr string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("The cluster doesn't exist the replica server node [%s]", addr)
+	return fmt.Errorf("the cluster doesn't have the replica server node [%s]", addr)
 }
 
 func (m *PegasusNodeManager) validateMetaAddress(addr string) error {
@@ -203,5 +203,5 @@ func (m *PegasusNodeManager) validateMetaAddress(addr string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("The cluster doesn't exist the meta server node [%s]", addr)
+	return fmt.Errorf("the cluster doesn't have the meta server node [%s]", addr)
 }

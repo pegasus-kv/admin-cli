@@ -20,9 +20,10 @@
 package executor
 
 import (
-	"admin-cli/executor/util"
 	"fmt"
+
 	"github.com/ghodss/yaml"
+	"github.com/pegasus-kv/admin-cli/executor/util"
 	"github.com/pegasus-kv/collector/aggregate"
 )
 
@@ -65,9 +66,7 @@ Request:
 `
 
 func ShowNodesStat(client *Client) error {
-	var nodesStats map[string]*aggregate.NodeStat
-
-	nodesStats = util.GetNodeStat(client.Perf)
+	nodesStats := util.GetNodeStat(client.Perf)
 	printNodesStatsTabular(client, nodesStats)
 	return nil
 }

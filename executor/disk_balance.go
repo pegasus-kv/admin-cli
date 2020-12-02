@@ -20,13 +20,13 @@
 package executor
 
 import (
-	"admin-cli/executor/util"
 	"context"
 	"fmt"
 	"time"
 
 	"github.com/XiaoMi/pegasus-go-client/idl/radmin"
 	"github.com/XiaoMi/pegasus-go-client/session"
+	"github.com/pegasus-kv/admin-cli/executor/util"
 )
 
 func DiskMigrate(client *Client, replicaServer string, pidStr string, from string, to string) error {

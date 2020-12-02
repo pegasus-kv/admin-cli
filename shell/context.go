@@ -17,22 +17,35 @@
  * under the License.
  */
 
-package cmd
+package shell
 
 import (
-	"github.com/pegasus-kv/admin-cli/executor"
-	"github.com/pegasus-kv/admin-cli/shell"
-
+	"fmt"
 	"github.com/desertbit/grumble"
 )
 
-func init() {
-	shell.AddCommand(&grumble.Command{
-		Name: "server-info",
-		Help: "displays the overall server information",
-		Run: func(c *grumble.Context) error {
-			return executor.ServerInfo(pegasusClient)
-		},
-	})
+// Context is the command execution context.
+type Context struct {
+	*grumble.Context
 
+	// The used table.
+	UseTable string
+}
+
+var globalUseTable string
+
+func SetUseTable(tb string) {
+	globalUseTable = tb
+}
+
+// RequireUseTable is a wrapper of grumble.Command.Run. The command will fail if no table was selected.
+func RequireUseTable(run func(*Context) error) func(c *grumble.Context) error {
+	grumbleRun := func(c *grumble.Context) error {
+		if globalUseTable == "" {
+			return fmt.Errorf("please USE a table first")
+		}
+		ctx := &Context{Context: c, UseTable: globalUseTable}
+		return run(ctx)
+	}
+	return grumbleRun
 }

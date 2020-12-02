@@ -20,9 +20,9 @@
 package executor
 
 import (
-	"admin-cli/executor/util"
 	"fmt"
 	"github.com/ghodss/yaml"
+	"github.com/pegasus-kv/admin-cli/executor/util"
 	"io"
 
 	"github.com/pegasus-kv/collector/aggregate"
@@ -77,7 +77,7 @@ Write:
   counter: write_bytes
 `
 
-// TableStat command.
+// TableStat is table-stat command.
 func TableStat(c *Client) error {
 	ag := aggregate.NewTableStatsAggregator(c.Nodes.MetaAddresses)
 	tableStats, _ := ag.Aggregate()
