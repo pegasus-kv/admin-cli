@@ -21,10 +21,10 @@ package executor
 
 import (
 	"fmt"
+	"github.com/pegasus-kv/admin-cli/tabular"
 	"io"
 
 	"github.com/ghodss/yaml"
-	"github.com/pegasus-kv/admin-cli/executor/util"
 	"github.com/pegasus-kv/collector/aggregate"
 )
 
@@ -103,16 +103,16 @@ func printTableStatsTabular(writer io.Writer, tables map[int32]*aggregate.TableS
 
 		header := []string{"AppID", "Name", "Partitions"}
 		var counters []map[string]interface{}
-		var formatters []util.StatFormatter
+		var formatters []tabular.StatFormatter
 		for key, attrs := range columns.(map[string]interface{}) {
 			attrsMap := attrs.(map[string]interface{})
 
 			header = append(header, key)
 			counters = append(counters, attrsMap)
-			formatters = util.FormatStat(attrsMap, formatters)
+			formatters = tabular.FormatStat(attrsMap, formatters)
 		}
 
-		tabWriter := util.NewTabWriter(writer)
+		tabWriter := tabular.NewTabWriter(writer)
 		tabWriter.SetHeader(header)
 		for _, tb := range tables {
 			// each table displays as a row

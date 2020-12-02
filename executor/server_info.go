@@ -23,7 +23,7 @@ import (
 	"github.com/XiaoMi/pegasus-go-client/admin"
 	"github.com/XiaoMi/pegasus-go-client/session"
 	"github.com/olekukonko/tablewriter"
-	"github.com/pegasus-kv/admin-cli/executor/util"
+	"github.com/pegasus-kv/admin-cli/tabular"
 )
 
 // ServerInfo command
@@ -57,7 +57,7 @@ func ServerInfo(client *Client) error {
 		}
 	}
 
-	util.CreateTabWriter(client, rowList, func(table *tablewriter.Table) {
+	tabular.CreateTabWriter(client, rowList, func(table *tablewriter.Table) {
 		table.SetAutoWrapText(false)
 	}).Render()
 	return nil

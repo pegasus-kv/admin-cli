@@ -23,10 +23,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/pegasus-kv/admin-cli/tabular"
 	"time"
 
 	"github.com/XiaoMi/pegasus-go-client/idl/admin"
-	"github.com/pegasus-kv/admin-cli/executor/util"
 )
 
 // ListTables command.
@@ -74,6 +74,6 @@ func ListTables(client *Client, useJSON bool) error {
 	}
 
 	// formats into tabular
-	util.Print(client, tbList)
+	tabular.Print(client, tbList)
 	return nil
 }

@@ -21,6 +21,7 @@ package executor
 
 import (
 	"fmt"
+	"github.com/pegasus-kv/admin-cli/tabular"
 
 	"github.com/ghodss/yaml"
 	"github.com/pegasus-kv/admin-cli/executor/util"
@@ -87,16 +88,16 @@ func printNodesStatsTabular(client *Client, nodes map[string]*aggregate.NodeStat
 
 		header := []string{"Node"}
 		var counters []map[string]interface{}
-		var formatters []util.StatFormatter
+		var formatters []tabular.StatFormatter
 		for key, attrs := range columns.(map[string]interface{}) {
 			attrsMap := attrs.(map[string]interface{})
 
 			header = append(header, key)
 			counters = append(counters, attrsMap)
-			formatters = util.FormatStat(attrsMap, formatters)
+			formatters = tabular.FormatStat(attrsMap, formatters)
 		}
 
-		tabWriter := util.NewTabWriter(client.Writer)
+		tabWriter := tabular.NewTabWriter(client.Writer)
 		tabWriter.SetHeader(header)
 		for _, node := range nodes {
 			// each table displays as a row

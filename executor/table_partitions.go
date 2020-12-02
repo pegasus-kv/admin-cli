@@ -21,10 +21,9 @@ package executor
 
 import (
 	"context"
+	"github.com/pegasus-kv/admin-cli/tabular"
 	"strings"
 	"time"
-
-	"github.com/pegasus-kv/admin-cli/executor/util"
 )
 
 // ShowTablePartitions is table-partitions command
@@ -61,6 +60,6 @@ func ShowTablePartitions(client *Client, tableName string) error {
 		partitions = append(partitions, p)
 	}
 
-	util.Print(client, partitions)
+	tabular.Print(client, partitions)
 	return nil
 }

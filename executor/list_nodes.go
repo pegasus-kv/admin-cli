@@ -22,13 +22,13 @@ package executor
 import (
 	"context"
 	"fmt"
+	"github.com/pegasus-kv/admin-cli/tabular"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/XiaoMi/pegasus-go-client/idl/admin"
 	"github.com/olekukonko/tablewriter"
-	"github.com/pegasus-kv/admin-cli/executor/util"
 )
 
 type nodeInfoStruct struct {
@@ -70,7 +70,7 @@ func ListNodes(client *Client, table string) error {
 	}
 	nodesSortByAddress(nodeList)
 
-	util.CreateTabWriter(client, nodeList, func(t *tablewriter.Table) {
+	tabular.CreateTabWriter(client, nodeList, func(t *tablewriter.Table) {
 		footerWithTotalCount(t, nodeList)
 	}).Render()
 	return nil
