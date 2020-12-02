@@ -22,11 +22,11 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/pegasus-kv/admin-cli/shell"
 	"time"
 
 	"github.com/XiaoMi/pegasus-go-client/idl/admin"
 	"github.com/desertbit/grumble"
+	"github.com/pegasus-kv/admin-cli/shell"
 )
 
 var cachedTableNames []string

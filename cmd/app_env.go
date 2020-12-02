@@ -21,10 +21,10 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/pegasus-kv/admin-cli/executor"
-	"github.com/pegasus-kv/admin-cli/shell"
 
 	"github.com/desertbit/grumble"
+	"github.com/pegasus-kv/admin-cli/executor"
+	"github.com/pegasus-kv/admin-cli/shell"
 )
 
 // NOTE: some old-version servers may not support some of the keys.

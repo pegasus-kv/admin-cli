@@ -21,10 +21,10 @@ package executor
 
 import (
 	"fmt"
-	"github.com/ghodss/yaml"
-	"github.com/pegasus-kv/admin-cli/executor/util"
 	"io"
 
+	"github.com/ghodss/yaml"
+	"github.com/pegasus-kv/admin-cli/executor/util"
 	"github.com/pegasus-kv/collector/aggregate"
 )
 

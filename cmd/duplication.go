@@ -21,11 +21,11 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/pegasus-kv/admin-cli/executor"
-	"github.com/pegasus-kv/admin-cli/shell"
 
 	"github.com/XiaoMi/pegasus-go-client/idl/admin"
 	"github.com/desertbit/grumble"
+	"github.com/pegasus-kv/admin-cli/executor"
+	"github.com/pegasus-kv/admin-cli/shell"
 )
 
 func init() {

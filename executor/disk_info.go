@@ -22,7 +22,6 @@ package executor
 import (
 	"context"
 	"fmt"
-	"github.com/pegasus-kv/admin-cli/executor/util"
 	"strconv"
 	"time"
 
@@ -30,6 +29,7 @@ import (
 	"github.com/XiaoMi/pegasus-go-client/idl/radmin"
 	"github.com/XiaoMi/pegasus-go-client/session"
 	"github.com/olekukonko/tablewriter"
+	"github.com/pegasus-kv/admin-cli/executor/util"
 )
 
 type DiskInfoType int32

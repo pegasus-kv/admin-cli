@@ -21,8 +21,9 @@ package util
 
 import (
 	"fmt"
-	"github.com/pegasus-kv/collector/aggregate"
 	"strings"
+
+	"github.com/pegasus-kv/collector/aggregate"
 )
 
 func GetPartitionStat(perfSession *aggregate.PerfSession, counter string, gpid string) int64 {

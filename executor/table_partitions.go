@@ -21,9 +21,10 @@ package executor
 
 import (
 	"context"
-	"github.com/pegasus-kv/admin-cli/executor/util"
 	"strings"
 	"time"
+
+	"github.com/pegasus-kv/admin-cli/executor/util"
 )
 
 // ShowTablePartitions is table-partitions command

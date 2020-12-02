@@ -22,13 +22,13 @@ package executor
 import (
 	"context"
 	"fmt"
-	"github.com/pegasus-kv/admin-cli/executor/util"
 	"io"
 	"os"
 	"time"
 
 	"github.com/XiaoMi/pegasus-go-client/idl/admin"
 	"github.com/XiaoMi/pegasus-go-client/session"
+	"github.com/pegasus-kv/admin-cli/executor/util"
 	"github.com/pegasus-kv/collector/aggregate"
 )
 

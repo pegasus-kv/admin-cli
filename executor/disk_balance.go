@@ -33,6 +33,7 @@ func DiskMigrate(client *Client, replicaServer string, pidStr string, from strin
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
+	// TODO(jiashuo1) resolve need refactor
 	var addr, err = util.Resolve(replicaServer, util.Host2Addr)
 	if err == nil {
 		replicaServer = addr
