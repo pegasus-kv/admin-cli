@@ -27,7 +27,6 @@ import (
 	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/XiaoMi/pegasus-go-client/idl/radmin"
 	"github.com/XiaoMi/pegasus-go-client/session"
-	"github.com/olekukonko/tablewriter"
 	"github.com/pegasus-kv/admin-cli/executor/util"
 	"github.com/pegasus-kv/admin-cli/tabular"
 )
@@ -154,6 +153,5 @@ func queryDiskReplicaCount(client *Client, resp *radmin.QueryDiskInfoResponse) {
 		})
 	}
 
-	tabular.New(client.Writer, replicaCountInfos, func(table *tablewriter.Table) {
-	}).Render()
+	tabular.Print(client.Writer, replicaCountInfos)
 }
