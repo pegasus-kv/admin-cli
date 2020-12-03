@@ -37,7 +37,7 @@ Memory:
  MemTable:
   counter: rdb_memtable_mem_usage
   unit: byte
-Peformance: 
+Performance:
  Abnormal:
   counter: recent_abnormal_count
  Expire:
