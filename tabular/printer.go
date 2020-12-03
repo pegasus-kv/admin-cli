@@ -45,22 +45,6 @@ import (
 //  tabular.Print(tables)
 // ```
 //
-//
-// Each element should be a simple struct (not pointer) with a number of fields.
-// Each field corresponds to a column in the table, the field must have json tag.
-// The tag name is the column name in the table header.
-//
-// For example:
-// ```
-//  type tableStruct struct {
-//    PartitionCount int    `json:"partition_count"`
-//    TableName      string `json:"name"`
-//  }
-//  var tables []tableStruct
-//  ...
-//  tabular.Print(tables)
-// ```
-//
 func New(writer io.Writer, valueList []interface{}, configurer func(*tablewriter.Table)) *tablewriter.Table {
 	tabWriter := NewTabWriter(writer)
 	header := getHeaderFromValueList(valueList)

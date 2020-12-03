@@ -27,9 +27,8 @@ import (
 
 func init() {
 	shell.AddCommand(&grumble.Command{
-		Name:      "partitions-stats",
-		Help:      "displays the metrics of partitions wihtin a table",
-		AllowArgs: true,
+		Name: "partitions-stats",
+		Help: "displays the metrics of partitions wihtin a table",
 		Run: shell.RequireUseTable(func(c *shell.Context) error {
 			return executor.ShowPartitionsStats(pegasusClient, c.UseTable)
 		}),

@@ -11,7 +11,8 @@ import (
 // Template receives a yaml template for printing the tabular contents.
 // A template must contain one or more sections, each is displayed as
 // a table. A sections could contain multiple keys, each represents as
-// the table column.
+// the table column. Template iterates all the items in every section,
+// one item acts as a row in the table.
 type Template struct {
 	// The sections are in the top-down order as they are declared in the template.
 	sections []*section
@@ -24,6 +25,7 @@ type Template struct {
 
 // NewTemplate parses the given template.
 func NewTemplate(template string) *Template {
+	// use MapSlice to preserve the order.
 	var sections yaml.MapSlice
 	err := yaml.Unmarshal([]byte(template), &sections)
 	if err != nil {
@@ -122,7 +124,7 @@ type ColumnAttributes struct {
 
 	Attrs map[string]string
 
-	// The formatter which is optionally declared in `unit`
+	// The formatter is optionally declared in `unit`
 	// If `unit` is "byte", byteStatFormatter is used.
 	// If `unit` is "MB", megabyteStatFormatter is used.
 	// Otherwise defaultFormatter is used.
