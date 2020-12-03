@@ -139,7 +139,7 @@ func defaultFormatter(v interface{}) string {
 	return fmt.Sprintf("%v", v)
 }
 
-// Used for counter with `"unit" : "size"`.
+// Used for `"unit" : "byte"`.
 func byteStatFormatter(v interface{}) string {
 	fv, ok := v.(float64)
 	if !ok {
@@ -148,10 +148,11 @@ func byteStatFormatter(v interface{}) string {
 	return humanize.Bytes(uint64(fv))
 }
 
+// Used for `"unit" : "MB"`.
 func megabyteStatFormatter(v interface{}) string {
 	fv, ok := v.(float64)
 	if !ok {
-		panic("data to unit:\"byte\" must be float64")
+		panic("data to unit:\"MB\" must be float64")
 	}
 	return humanize.Bytes(uint64(fv) << 20)
 }
