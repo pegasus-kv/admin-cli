@@ -25,11 +25,26 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/dustin/go-humanize"
 	"github.com/olekukonko/tablewriter"
 )
 
 // New creates a tablewriter.Table and allows customizing the table.
+//
+// Each element should be a simple struct (not pointer) with a number of fields.
+// Each field corresponds to a column in the table, the field must have json tag.
+// The tag name is the column name in the table header.
+//
+// For example:
+// ```
+//  type tableStruct struct {
+//    PartitionCount int    `json:"partition_count"`
+//    TableName      string `json:"name"`
+//  }
+//  var tables []tableStruct
+//  ...
+//  tabular.Print(tables)
+// ```
+//
 //
 // Each element should be a simple struct (not pointer) with a number of fields.
 // Each field corresponds to a column in the table, the field must have json tag.
@@ -110,32 +125,3 @@ func formatColumnName(jsonTagName string) string {
 	}
 	return strings.Join(words, "\n")
 }
-
-func FormatStat(attrsMap map[string]interface{}, formatters []StatFormatter) []StatFormatter {
-	if attrsMap["unit"] == nil {
-		formatters = append(formatters, DefaultStatFormatter)
-	} else if attrsMap["unit"] == "byte" {
-		formatters = append(formatters, ByteStatFormatter)
-	} else if attrsMap["unit"] == "MB" {
-		formatters = append(formatters, MegabyteStatFormatter)
-	} else {
-		panic(fmt.Sprintf("invalid unit %s in template", attrsMap["unit"]))
-	}
-	return formatters
-}
-
-// The default StatFormatter if no unit is specified
-func DefaultStatFormatter(v float64) string {
-	return humanize.SIWithDigits(v, 2, "")
-}
-
-// Used for counter with `"unit" : "size"`.
-func ByteStatFormatter(v float64) string {
-	return humanize.Bytes(uint64(v))
-}
-
-func MegabyteStatFormatter(v float64) string {
-	return humanize.Bytes(uint64(v) << 20)
-}
-
-type StatFormatter func(float64) string

@@ -20,16 +20,14 @@
 package executor
 
 import (
-	"fmt"
-	"github.com/pegasus-kv/admin-cli/tabular"
-
-	"github.com/ghodss/yaml"
 	"github.com/pegasus-kv/admin-cli/executor/util"
+	"github.com/pegasus-kv/admin-cli/tabular"
 	"github.com/pegasus-kv/collector/aggregate"
 )
 
 var nodeStatsTemplate = `---
 Usage:
+ Node: ~
  DiskTotal:
   counter: replica*eon.replica_stub*disk.capacity.total(MB)
   unit: MB
@@ -48,6 +46,7 @@ Usage:
   counter: replica*app.pegasus*rdb.index_and_filter_blocks.memory_usage
   unit: byte
 Request:
+ Node: ~
  Get:
   counter: replica*app.pegasus*get_qps
  Mget:
@@ -73,41 +72,18 @@ func ShowNodesStat(client *Client, detail bool) error {
 }
 
 func printNodesStatsTabular(client *Client, nodes map[string]*aggregate.NodeStat, detail bool) {
-	var sections map[string]interface{}
-	err := yaml.Unmarshal([]byte(nodeStatsTemplate), &sections)
-	if err != nil {
-		panic(err)
+	t := tabular.NewTemplate(nodeStatsTemplate)
+	t.SetColumnValueFunc(func(col *tabular.ColumnAttributes, rowData interface{}) interface{} {
+		node := rowData.(*aggregate.NodeStat)
+		if col.Name == "Node" {
+			return client.Nodes.MustGetReplica(node.Addr).CombinedAddr()
+		}
+		return node.Stats[col.Attrs["counter"]]
+	})
+
+	var valueList []interface{}
+	for _, n := range nodes {
+		valueList = append(valueList, n)
 	}
-
-	for sect, columns := range sections {
-		// print section
-		if !detail && sect != "Usage" {
-			continue
-		}
-		fmt.Printf("[%s]\n", sect)
-
-		header := []string{"Node"}
-		var counters []map[string]interface{}
-		var formatters []tabular.StatFormatter
-		for key, attrs := range columns.(map[string]interface{}) {
-			attrsMap := attrs.(map[string]interface{})
-
-			header = append(header, key)
-			counters = append(counters, attrsMap)
-			formatters = tabular.FormatStat(attrsMap, formatters)
-		}
-
-		tabWriter := tabular.NewTabWriter(client.Writer)
-		tabWriter.SetHeader(header)
-		for _, node := range nodes {
-			// each table displays as a row
-			var row []string
-			row = append(row, client.Nodes.MustGetReplica(node.Addr).CombinedAddr())
-			for i, kv := range counters {
-				row = append(row, formatters[i](node.Stats[kv["counter"].(string)]))
-			}
-			tabWriter.Append(row)
-		}
-		tabWriter.Render()
-	}
+	t.Render(client, valueList)
 }

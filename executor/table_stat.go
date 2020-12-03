@@ -20,17 +20,18 @@
 package executor
 
 import (
-	"fmt"
 	"io"
 	"sort"
 
-	"github.com/ghodss/yaml"
 	"github.com/pegasus-kv/admin-cli/tabular"
 	"github.com/pegasus-kv/collector/aggregate"
 )
 
 var tableStatsTemplate = `--- 
 Memory: 
+ AppID: ~
+ Name: ~
+ Partitions: ~
  Index:
   counter: rdb_index_and_filter_blocks_mem_usage
   unit: byte
@@ -38,6 +39,9 @@ Memory:
   counter: rdb_memtable_mem_usage
   unit: byte
 Performance:
+ AppID: ~
+ Name: ~
+ Partitions: ~
  Abnormal:
   counter: recent_abnormal_count
  Expire:
@@ -45,6 +49,9 @@ Performance:
  Filter:
   counter: recent_filter_count
 Read: 
+ AppID: ~
+ Name: ~
+ Partitions: ~
  Get:
   counter: get_qps
  Mget:
@@ -55,6 +62,9 @@ Read:
   counter: read_bytes
   unit: byte
 Storage: 
+ AppID: ~
+ Name: ~
+ Partitions: ~
  KeyNum:
   counter: rdb_estimate_num_keys
  TableSize:
@@ -64,6 +74,9 @@ Storage:
   counter: avg_partition_mb
   unit: MB
 Write: 
+ AppID: ~
+ Name: ~
+ Partitions: ~
  Put:
   counter: put_qps
  Mput:
@@ -99,41 +112,27 @@ func TableStat(c *Client) error {
 // printTableStatsTabular prints table stats in a number of sections,
 // according to the predefined template.
 func printTableStatsTabular(writer io.Writer, tables map[int32]*aggregate.TableStats) {
-	var sections map[string]interface{}
-	err := yaml.Unmarshal([]byte(tableStatsTemplate), &sections)
-	if err != nil {
-		panic(err)
-	}
-
-	for sect, columns := range sections {
-		// print section
-		fmt.Printf("[%s]\n", sect)
-
-		header := []string{"AppID", "Name", "Partitions"}
-		var counters []map[string]interface{}
-		var formatters []tabular.StatFormatter
-		for key, attrs := range columns.(map[string]interface{}) {
-			attrsMap := attrs.(map[string]interface{})
-
-			header = append(header, key)
-			counters = append(counters, attrsMap)
-			formatters = tabular.FormatStat(attrsMap, formatters)
+	t := tabular.NewTemplate(tableStatsTemplate)
+	t.SetColumnValueFunc(func(col *tabular.ColumnAttributes, rowData interface{}) interface{} {
+		tbStat := rowData.(*aggregate.TableStats)
+		if col.Name == "AppID" {
+			return tbStat.AppID
 		}
-
-		tabWriter := tabular.NewTabWriter(writer)
-		tabWriter.SetHeader(header)
-		sortedTables := tableStatsSortedByAppID(tables)
-		for _, tb := range sortedTables {
-			// each table displays as a row
-			var row []string
-			row = append(row, fmt.Sprintf("%d", tb.AppID), tb.TableName, fmt.Sprintf("%d", len(tb.Partitions)))
-			for i, kv := range counters {
-				row = append(row, formatters[i](tb.Stats[kv["counter"].(string)]))
-			}
-			tabWriter.Append(row)
+		if col.Name == "Name" {
+			return tbStat.TableName
 		}
-		tabWriter.Render()
+		if col.Name == "Partitions" {
+			return len(tbStat.Partitions)
+		}
+		return tbStat.Stats[col.Attrs["counter"]]
+	})
+
+	sortedTables := tableStatsSortedByAppID(tables)
+	var valueList []interface{}
+	for _, tb := range sortedTables {
+		valueList = append(valueList, tb)
 	}
+	t.Render(writer, valueList)
 }
 
 func tableStatsSortedByAppID(tables map[int32]*aggregate.TableStats) []*aggregate.TableStats {
