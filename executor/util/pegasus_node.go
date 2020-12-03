@@ -150,32 +150,31 @@ func (m *PegasusNodeManager) GetNode(addr string, ntype session.NodeType) (*Pega
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	if m.nodes[addr] != nil {
-		if m.nodes[addr].Type != ntype {
-			return nil, fmt.Errorf("The addr is not %s", ntype)
+	if n, ok := m.nodes[addr]; ok { // node exists
+		if n.Type != ntype {
+			return nil, fmt.Errorf("node(%s) is not %s", n, ntype)
 		}
-		return m.nodes[addr], nil
+		return n, nil
 	} else {
 		node, err := m.getNodeFromHost(addr, ntype)
 		if err == nil {
 			return node, nil
 		}
+		return nil, err
 	}
-
-	return nil, fmt.Errorf("Invalid address %s", addr)
 }
 
 func (m *PegasusNodeManager) getNodeFromHost(host string, ntype session.NodeType) (*PegasusNode, error) {
 	for _, node := range m.nodes {
 		if fmt.Sprintf("%s:%d", node.Hostname, node.Port) == host {
 			if node.Type != ntype {
-				return nil, fmt.Errorf("The hostname is not %s", ntype)
+				return nil, fmt.Errorf("node(%s) is not %s", node, ntype)
 			}
 			return node, nil
 		}
 	}
 
-	return nil, fmt.Errorf("Invalid hostname %s", host)
+	return nil, fmt.Errorf("Invalid node %s", host)
 }
 
 // GetAllNodes returns all nodes that matches the type. The result could be inconsistent

@@ -109,8 +109,7 @@ func queryDiskCapacity(client *Client, replicaServer string, resp *radmin.QueryD
 			appendCapacity(diskInfo.HoldingSecondaryReplicas, "secondary")
 
 			// formats into tabularWriter
-			tabular.New(client.Writer, replicaCapacityInfos, func(table *tablewriter.Table) {
-			}).Render()
+			tabular.Print(client.Writer, replicaCapacityInfos)
 			return
 		}
 
@@ -122,8 +121,7 @@ func queryDiskCapacity(client *Client, replicaServer string, resp *radmin.QueryD
 		})
 	}
 
-	tabular.New(client.Writer, nodeCapacityInfos, func(table *tablewriter.Table) {
-	}).Render()
+	tabular.Print(client.Writer, nodeCapacityInfos)
 }
 
 func queryDiskReplicaCount(client *Client, resp *radmin.QueryDiskInfoResponse) {
