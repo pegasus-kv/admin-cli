@@ -20,6 +20,7 @@
 package executor
 
 import (
+	"fmt"
 	"io"
 	"sort"
 
@@ -29,9 +30,6 @@ import (
 
 var tableStatsTemplate = `--- 
 Memory: 
- AppID: ~
- Name: ~
- Partitions: ~
  Index:
   counter: rdb_index_and_filter_blocks_mem_usage
   unit: byte
@@ -39,9 +37,6 @@ Memory:
   counter: rdb_memtable_mem_usage
   unit: byte
 Performance:
- AppID: ~
- Name: ~
- Partitions: ~
  Abnormal:
   counter: recent_abnormal_count
  Expire:
@@ -49,9 +44,6 @@ Performance:
  Filter:
   counter: recent_filter_count
 Read: 
- AppID: ~
- Name: ~
- Partitions: ~
  Get:
   counter: get_qps
  Mget:
@@ -62,9 +54,6 @@ Read:
   counter: read_bytes
   unit: byte
 Storage: 
- AppID: ~
- Name: ~
- Partitions: ~
  KeyNum:
   counter: rdb_estimate_num_keys
  TableSize:
@@ -74,9 +63,6 @@ Storage:
   counter: avg_partition_mb
   unit: MB
 Write: 
- AppID: ~
- Name: ~
- Partitions: ~
  Put:
   counter: put_qps
  Mput:
@@ -113,17 +99,12 @@ func TableStat(c *Client) error {
 // according to the predefined template.
 func printTableStatsTabular(writer io.Writer, tables map[int32]*aggregate.TableStats) {
 	t := tabular.NewTemplate(tableStatsTemplate)
+	t.SetCommonColumns([]string{"AppID", "Name", "Partitions"}, func(rowData interface{}) []string {
+		tbStat := rowData.(*aggregate.TableStats)
+		return []string{fmt.Sprint(tbStat.AppID), tbStat.TableName, fmt.Sprint(len(tbStat.Partitions))}
+	})
 	t.SetColumnValueFunc(func(col *tabular.ColumnAttributes, rowData interface{}) interface{} {
 		tbStat := rowData.(*aggregate.TableStats)
-		if col.Name == "AppID" {
-			return tbStat.AppID
-		}
-		if col.Name == "Name" {
-			return tbStat.TableName
-		}
-		if col.Name == "Partitions" {
-			return len(tbStat.Partitions)
-		}
 		return tbStat.Stats[col.Attrs["counter"]]
 	})
 

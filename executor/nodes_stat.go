@@ -27,7 +27,6 @@ import (
 
 var nodeStatsTemplate = `---
 Usage:
- Node: ~
  DiskTotal:
   counter: replica*eon.replica_stub*disk.capacity.total(MB)
   unit: MB
@@ -46,7 +45,6 @@ Usage:
   counter: replica*app.pegasus*rdb.index_and_filter_blocks.memory_usage
   unit: byte
 Request:
- Node: ~
  Get:
   counter: replica*app.pegasus*get_qps
  Mget:
@@ -73,11 +71,12 @@ func ShowNodesStat(client *Client, detail bool) error {
 
 func printNodesStatsTabular(client *Client, nodes map[string]*aggregate.NodeStat, detail bool) {
 	t := tabular.NewTemplate(nodeStatsTemplate)
+	t.SetCommonColumns([]string{"Node"}, func(rowData interface{}) []string {
+		node := rowData.(*aggregate.NodeStat)
+		return []string{client.Nodes.MustGetReplica(node.Addr).CombinedAddr()}
+	})
 	t.SetColumnValueFunc(func(col *tabular.ColumnAttributes, rowData interface{}) interface{} {
 		node := rowData.(*aggregate.NodeStat)
-		if col.Name == "Node" {
-			return client.Nodes.MustGetReplica(node.Addr).CombinedAddr()
-		}
 		return node.Stats[col.Attrs["counter"]]
 	})
 

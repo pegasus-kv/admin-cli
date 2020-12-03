@@ -17,6 +17,9 @@ type Template struct {
 	sections []*section
 
 	colValFunc ColumnValueFunc
+
+	commonColFunc  CommonColumnsFunc
+	commonColNames []string
 }
 
 // NewTemplate parses the given template.
@@ -33,11 +36,13 @@ func NewTemplate(template string) *Template {
 		columns := kv.Value.(yaml.MapSlice)
 		for _, col := range columns {
 			colAttrs := &ColumnAttributes{Name: fmt.Sprint(col.Key), Attrs: make(map[string]string)}
-			attrs := col.Value.(yaml.MapSlice)
-			for _, attr := range attrs {
-				name := fmt.Sprint(attr.Key)
-				value := fmt.Sprint(attr.Value)
-				colAttrs.Attrs[name] = value
+			if col.Value != nil {
+				attrs := col.Value.(yaml.MapSlice)
+				for _, attr := range attrs {
+					name := fmt.Sprint(attr.Key)
+					value := fmt.Sprint(attr.Value)
+					colAttrs.Attrs[name] = value
+				}
 			}
 			colAttrs.formatter = getFormatter(colAttrs.Attrs)
 			sec.columns = append(sec.columns, colAttrs)
@@ -63,12 +68,22 @@ func getFormatter(attrs map[string]string) columnValueFormatter {
 	}
 }
 
-// ColumnValueFunc takes the column value from a row of user record.
+// ColumnValueFunc takes the column value from a user record.
 type ColumnValueFunc func(col *ColumnAttributes, rowData interface{}) interface{}
 
 // SetColumnValueFunc configures ColumnValueFunc
 func (t *Template) SetColumnValueFunc(f ColumnValueFunc) {
 	t.colValFunc = f
+}
+
+// CommonColumnsFunc returns a list of common columns.
+type CommonColumnsFunc func(rowData interface{}) []string
+
+// SetCommonColumns sets the columns that are exactly the same among sections.
+// This is a conveninence util to prevent repeatedly declaring the column for each section.
+func (t *Template) SetCommonColumns(columnNames []string, f CommonColumnsFunc) {
+	t.commonColNames = columnNames
+	t.commonColFunc = f
 }
 
 // Render template output
@@ -78,13 +93,13 @@ func (t *Template) Render(writer io.Writer, rows []interface{}) {
 		fmt.Fprintf(writer, "[%s]\n", sect.name)
 
 		tabWriter := NewTabWriter(writer)
-		var header []string
+		header := t.commonColNames
 		for _, col := range sect.columns {
 			header = append(header, col.Name)
 		}
 		tabWriter.SetHeader(header)
 		for _, row := range rows {
-			var rowColumns []string
+			rowColumns := t.commonColFunc(row)
 			for _, col := range sect.columns {
 				columnValue := t.colValFunc(col, row)
 				rowColumns = append(rowColumns, col.formatter(columnValue))
@@ -95,6 +110,7 @@ func (t *Template) Render(writer io.Writer, rows []interface{}) {
 	}
 }
 
+// section display as a table.
 type section struct {
 	name    string
 	columns []*ColumnAttributes
