@@ -29,20 +29,6 @@ import (
 )
 
 var tableStatsTemplate = `--- 
-Memory: 
- Index:
-  counter: rdb_index_and_filter_blocks_mem_usage
-  unit: byte
- MemTable:
-  counter: rdb_memtable_mem_usage
-  unit: byte
-Performance:
- Abnormal:
-  counter: recent_abnormal_count
- Expire:
-  counter: recent_expire_count
- Filter:
-  counter: recent_filter_count
 Read: 
  Get:
   counter: get_qps
@@ -53,15 +39,6 @@ Read:
  RBytes:
   counter: read_bytes
   unit: byte
-Storage: 
- KeyNum:
-  counter: rdb_estimate_num_keys
- TableSize:
-  counter: sst_storage_mb
-  unit: MB
- AvgPartitionSize:
-  counter: avg_partition_mb
-  unit: MB
 Write: 
  Put:
   counter: put_qps
@@ -76,6 +53,29 @@ Write:
  WBytes:
   counter: write_bytes
   unit: byte
+Storage:
+ KeyNum:
+  counter: rdb_estimate_num_keys
+ TableSize:
+  counter: sst_storage_mb
+  unit: MB
+ AvgPartitionSize:
+  counter: avg_partition_mb
+  unit: MB
+Memory:
+ Index:
+  counter: rdb_index_and_filter_blocks_mem_usage
+  unit: byte
+ MemTable:
+  counter: rdb_memtable_mem_usage
+  unit: byte
+Performance:
+ Abnormal:
+  counter: recent_abnormal_count
+ Expire:
+  counter: recent_expire_count
+ Filter:
+  counter: recent_filter_count
 `
 
 // TableStat is table-stat command.
