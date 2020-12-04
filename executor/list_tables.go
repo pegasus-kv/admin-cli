@@ -47,7 +47,16 @@ func ListTables(client *Client, showDropped bool) error {
 		return err
 	}
 
-	type tableStruct struct {
+	type dropTableStruct struct {
+		AppID          int32  `json:"id"`
+		Name           string `json:"name"`
+		Status         string `json:"status"`
+		PartitionCount int32  `json:"partitionCount"`
+		DropTime       string `json:"dropTime"`
+		ExpireTime     string `json:"expireTime"`
+	}
+
+	type availableTableStruct struct {
 		AppID           int32  `json:"id"`
 		Name            string `json:"name"`
 		Status          string `json:"status"`
@@ -57,33 +66,41 @@ func ListTables(client *Client, showDropped bool) error {
 		WriteUnHealthy  int32  `json:"writeUnhealthy"`
 		ReadUnHealthy   int32  `json:"readUnhealthy"`
 		CreateTime      string `json:"createTime"`
-		DropTime        string `json:"dropTime"`
-		ExpireTime      string `json:"expireTime"`
-		WReqRateLimit   string `json:"wreqLimit"`
-		WBytesRateLimit string `json:"wbytesLimit"`
+		WReqRateLimit   string `json:"writeReqLimit"`
+		WBytesRateLimit string `json:"writeBytesLimit"`
 	}
+
 	var tbList []interface{}
 	for _, tb := range resp.Infos {
-		fullHealthy, unHealthy, writeUnHealthy, readUnHealthy, err := getPartitionHealthyCount(client, tb)
-		if err != nil {
-			return err
+		if status == admin.AppStatus_AS_AVAILABLE {
+			fullHealthy, unHealthy, writeUnHealthy, readUnHealthy, err := getPartitionHealthyCount(client, tb)
+			if err != nil {
+				return err
+			}
+			tbList = append(tbList, availableTableStruct{
+				AppID:           tb.AppID,
+				Name:            tb.AppName,
+				Status:          tb.Status.String(),
+				FullHealthy:     fullHealthy,
+				UnHealthy:       unHealthy,
+				WriteUnHealthy:  writeUnHealthy,
+				ReadUnHealthy:   readUnHealthy,
+				PartitionCount:  tb.PartitionCount,
+				CreateTime:      util.FormatDate(tb.CreateSecond),
+				WReqRateLimit:   tb.Envs["replica.write_throttling"],
+				WBytesRateLimit: tb.Envs["replica.write_throttling_by_size"],
+			})
+		} else if status == admin.AppStatus_AS_DROPPED {
+			tbList = append(tbList, dropTableStruct{
+				AppID:          tb.AppID,
+				Name:           tb.AppName,
+				Status:         tb.Status.String(),
+				DropTime:       util.FormatDate(tb.DropSecond),
+				ExpireTime:     util.FormatDate(tb.ExpireSecond),
+				PartitionCount: tb.PartitionCount,
+			})
 		}
 
-		tbList = append(tbList, tableStruct{
-			AppID:           tb.AppID,
-			Name:            tb.AppName,
-			Status:          tb.Status.String(),
-			FullHealthy:     fullHealthy,
-			UnHealthy:       unHealthy,
-			WriteUnHealthy:  writeUnHealthy,
-			ReadUnHealthy:   readUnHealthy,
-			PartitionCount:  tb.PartitionCount,
-			CreateTime:      util.FormatDate(tb.CreateSecond),
-			DropTime:        util.FormatDate(tb.DropSecond),
-			ExpireTime:      util.FormatDate(tb.ExpireSecond),
-			WReqRateLimit:   tb.Envs["replica.write_throttling"],
-			WBytesRateLimit: tb.Envs["replica.write_throttling_by_size"],
-		})
 	}
 
 	// formats into tabular
