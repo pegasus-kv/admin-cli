@@ -43,8 +43,8 @@ Commands:
   help              use 'help [command]' for command help
   list-tables, ls   list all tables in the cluster
   meta-level        Get the current meta function level
+  node-stat         query all nodes perf stat in the cluster
   nodes             displays the nodes overall status
-  nodes-stat        query all nodes perf stat in the cluster
   partition-stat    displays the metrics of partitions within a table
   recall            recall the dropped table
   remote-command    send remote command, for example, remote-command meta or replica
