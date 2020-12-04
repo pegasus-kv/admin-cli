@@ -24,5 +24,5 @@ func UseTable(client *Client, table string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf(fmt.Sprintf("Table \"%s\" is not existed!", table))
+	return fmt.Errorf(fmt.Sprintf("Table \"%s\" doesn't exist!", table))
 }
