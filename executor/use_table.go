@@ -8,7 +8,7 @@ import (
 	"github.com/XiaoMi/pegasus-go-client/idl/admin"
 )
 
-func UseTables(client *Client, table string) error {
+func UseTable(client *Client, table string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 

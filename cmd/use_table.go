@@ -45,7 +45,7 @@ func init() {
 				c.App.Println(c.Command.Usage)
 				return fmt.Errorf("invalid number (%d) of arguments for `use`", len(c.Args))
 			}
-			err := executor.UseTables(pegasusClient, c.Args[0])
+			err := executor.UseTable(pegasusClient, c.Args[0])
 			if err != nil {
 				return err
 			}
