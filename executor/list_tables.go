@@ -111,7 +111,7 @@ func getPartitionHealthyCount(client *Client, table *admin.AppInfo) (int32, int3
 		return 0, 0, 0, err
 	}
 
-	var unHealthy, writeUnHealthy, readUnHealthy int32
+	var fullHealthy, unHealthy, writeUnHealthy, readUnHealthy int32
 	for _, partition := range resp.Partitions {
 		var replicaCnt int32
 		if partition.Primary == nil {
@@ -119,11 +119,13 @@ func getPartitionHealthyCount(client *Client, table *admin.AppInfo) (int32, int3
 			readUnHealthy++
 		} else {
 			replicaCnt = int32(len(partition.Secondaries) + 1)
-			if replicaCnt < 2 {
+			if replicaCnt >= partition.MaxReplicaCount {
+				fullHealthy++
+			} else if replicaCnt < 2 {
 				writeUnHealthy++
 			}
 		}
 	}
-	unHealthy = writeUnHealthy + readUnHealthy
+	unHealthy = table.PartitionCount - fullHealthy
 	return unHealthy, writeUnHealthy, readUnHealthy, nil
 }
