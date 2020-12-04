@@ -50,7 +50,6 @@ func ListTables(client *Client, showDropped bool) error {
 	type dropTableStruct struct {
 		AppID          int32  `json:"id"`
 		Name           string `json:"name"`
-		Status         string `json:"status"`
 		PartitionCount int32  `json:"partitionCount"`
 		DropTime       string `json:"dropTime"`
 		ExpireTime     string `json:"expireTime"`
@@ -59,7 +58,6 @@ func ListTables(client *Client, showDropped bool) error {
 	type availableTableStruct struct {
 		AppID           int32  `json:"id"`
 		Name            string `json:"name"`
-		Status          string `json:"status"`
 		PartitionCount  int32  `json:"partitionCount"`
 		FullHealthy     int32  `json:"fullHealthy"`
 		UnHealthy       int32  `json:"unhealthy"`
@@ -80,7 +78,6 @@ func ListTables(client *Client, showDropped bool) error {
 			tbList = append(tbList, availableTableStruct{
 				AppID:           tb.AppID,
 				Name:            tb.AppName,
-				Status:          tb.Status.String(),
 				FullHealthy:     fullHealthy,
 				UnHealthy:       unHealthy,
 				WriteUnHealthy:  writeUnHealthy,
@@ -94,7 +91,6 @@ func ListTables(client *Client, showDropped bool) error {
 			tbList = append(tbList, dropTableStruct{
 				AppID:          tb.AppID,
 				Name:           tb.AppName,
-				Status:         tb.Status.String(),
 				DropTime:       util.FormatDate(tb.DropSecond),
 				ExpireTime:     util.FormatDate(tb.ExpireSecond),
 				PartitionCount: tb.PartitionCount,
