@@ -22,6 +22,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/pegasus-kv/admin-cli/executor"
 	"time"
 
 	"github.com/XiaoMi/pegasus-go-client/idl/admin"
@@ -44,8 +45,11 @@ func init() {
 				c.App.Println(c.Command.Usage)
 				return fmt.Errorf("invalid number (%d) of arguments for `use`", len(c.Args))
 			}
+			err := executor.UseTables(pegasusClient, c.Args[0])
+			if err != nil {
+				return err
+			}
 			shell.SetUseTable(c.Args[0])
-			// TODO(wutao): verify if the use table exists
 			c.App.Println("ok")
 			return nil
 		},

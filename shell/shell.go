@@ -26,8 +26,7 @@ import (
 // App is the global shell app.
 var App *grumble.App
 
-// TODO(jiashuo) The version name my need rename
-var NameWithVersion = "Pegasus-AdminCli-1.0.0"
+var NameWithVersion = "Pegasus-AdminCli-0.1.0"
 
 // AddCommand registers the command to the global shell app.
 func AddCommand(cmd *grumble.Command) {
