@@ -21,8 +21,7 @@ package executor
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
+	"github.com/pegasus-kv/admin-cli/executor/util"
 	"github.com/pegasus-kv/admin-cli/tabular"
 	"time"
 
@@ -30,50 +29,92 @@ import (
 )
 
 // ListTables command.
-func ListTables(client *Client, useJSON bool) error {
+func ListTables(client *Client, showDropped bool) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
+
+	var status admin.AppStatus
+	if showDropped {
+		status = admin.AppStatus_AS_DROPPED
+	} else {
+		status = admin.AppStatus_AS_AVAILABLE
+	}
+
 	resp, err := client.Meta.ListApps(ctx, &admin.ListAppsRequest{
-		Status: admin.AppStatus_AS_AVAILABLE,
+		Status: status,
 	})
 	if err != nil {
 		return err
 	}
 
 	type tableStruct struct {
-		AppID           int32  `json:"app_id"`
+		AppID           int32  `json:"id"`
 		Name            string `json:"name"`
-		PartitionCount  int32  `json:"partition_count"`
-		CreateTime      string `json:"create_time"`
-		WReqRateLimit   string `json:"wreq_rate-limit"`
-		WBytesRateLimit string `json:"wbytes_rate-limit"`
+		Status          string `json:"status"`
+		PartitionCount  int32  `json:"partitionCount"`
+		FullHealthy     int32  `json:"fullHealthy"`
+		UnHealthy       int32  `json:"unhealthy"`
+		WriteUnHealthy  int32  `json:"writeUnhealthy"`
+		ReadUnHealthy   int32  `json:"readUnhealthy"`
+		CreateTime      string `json:"createTime"`
+		DropTime        string `json:"dropTime"`
+		ExpireTime      string `json:"expireTime"`
+		WReqRateLimit   string `json:"wreqLimit"`
+		WBytesRateLimit string `json:"wbytesLimit"`
 	}
 	var tbList []interface{}
 	for _, tb := range resp.Infos {
-		createTime := "unknown"
-		if tb.CreateSecond != 0 {
-			createTime = time.Unix(tb.CreateSecond, 0).Format("2006-01-02")
+		fullHealthy, unHealthy, writeUnHealthy, readUnHealthy, err := getPartitionHealthyCount(client, tb)
+		if err != nil {
+			return err
 		}
-		throttlingQPS := tb.Envs["replica.write_throttling"]
-		throttlingBytes := tb.Envs["replica.write_throttling_by_size"]
+
 		tbList = append(tbList, tableStruct{
 			AppID:           tb.AppID,
 			Name:            tb.AppName,
+			Status:          tb.Status.String(),
+			FullHealthy:     fullHealthy,
+			UnHealthy:       unHealthy,
+			WriteUnHealthy:  writeUnHealthy,
+			ReadUnHealthy:   readUnHealthy,
 			PartitionCount:  tb.PartitionCount,
-			CreateTime:      createTime,
-			WReqRateLimit:   throttlingQPS,
-			WBytesRateLimit: throttlingBytes,
+			CreateTime:      util.FormatDate(tb.CreateSecond),
+			DropTime:        util.FormatDate(tb.DropSecond),
+			ExpireTime:      util.FormatDate(tb.ExpireSecond),
+			WReqRateLimit:   tb.Envs["replica.write_throttling"],
+			WBytesRateLimit: tb.Envs["replica.write_throttling_by_size"],
 		})
-	}
-
-	if useJSON {
-		// formats into JSON
-		outputBytes, _ := json.MarshalIndent(tbList, "", "  ")
-		fmt.Fprintln(client, string(outputBytes))
-		return nil
 	}
 
 	// formats into tabular
 	tabular.Print(client, tbList)
 	return nil
+}
+
+// return (FullHealthy, UnHealthy, WriteUnHealthy, ReadUnHealthy, Err)
+func getPartitionHealthyCount(client *Client, table *admin.AppInfo) (int32, int32, int32, int32, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	resp, err := client.Meta.QueryConfig(ctx, table.AppName)
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+
+	var fullHealthy, unHealthy, writeUnHealthy, readUnHealthy int32
+	for _, partition := range resp.Partitions {
+		var replicaCnt int32
+		if partition.Primary == nil {
+			writeUnHealthy++
+			readUnHealthy++
+		} else {
+			replicaCnt = int32(len(partition.Secondaries) + 1)
+			if replicaCnt >= partition.MaxReplicaCount {
+				fullHealthy++
+			} else if replicaCnt < 2 {
+				writeUnHealthy++
+			}
+		}
+	}
+	unHealthy = table.PartitionCount - fullHealthy
+	return fullHealthy, unHealthy, writeUnHealthy, readUnHealthy, nil
 }
