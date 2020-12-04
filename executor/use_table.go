@@ -3,8 +3,9 @@ package executor
 import (
 	"context"
 	"fmt"
-	"github.com/XiaoMi/pegasus-go-client/idl/admin"
 	"time"
+
+	"github.com/XiaoMi/pegasus-go-client/idl/admin"
 )
 
 func UseTables(client *Client, table string) error {
