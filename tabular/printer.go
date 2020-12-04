@@ -21,9 +21,10 @@ package tabular
 
 import (
 	"fmt"
-	"github.com/olekukonko/tablewriter"
 	"io"
 	"reflect"
+
+	"github.com/olekukonko/tablewriter"
 )
 
 // New creates a tablewriter.Table and allows customizing the table.

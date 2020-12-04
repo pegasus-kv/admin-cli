@@ -34,7 +34,7 @@ func AddCommand(cmd *grumble.Command) {
 	App.AddCommand(cmd)
 }
 
-// TODO(jiashuo1) some command need table no support verify the table exists
+// TODO(jiashuo1) some command with table no support verify the table exists
 func init() {
 	App = grumble.New(&grumble.Config{
 		Name:        NameWithVersion,

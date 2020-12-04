@@ -22,15 +22,15 @@ package executor
 import (
 	"context"
 	"fmt"
-	"github.com/XiaoMi/pegasus-go-client/idl/replication"
-	"github.com/pegasus-kv/admin-cli/tabular"
 	"reflect"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/XiaoMi/pegasus-go-client/idl/admin"
+	"github.com/XiaoMi/pegasus-go-client/idl/replication"
 	"github.com/olekukonko/tablewriter"
+	"github.com/pegasus-kv/admin-cli/tabular"
 )
 
 type nodeInfoStruct struct {
@@ -139,7 +139,7 @@ func nodesSortByAddress(nodes []interface{}) []interface{} {
 }
 
 func footerWithTotalCount(tbWriter *tablewriter.Table, nlist []interface{}) {
-	var aliveCnt, unAliveCnt int
+	var aliveCnt, unaliveCnt int
 	var totalRepCnt, totalPriCnt, totalSecCnt int
 	for _, element := range nlist {
 		n := element.(nodeInfoStruct)
@@ -149,11 +149,11 @@ func footerWithTotalCount(tbWriter *tablewriter.Table, nlist []interface{}) {
 		if n.Status == admin.NodeStatus_NS_ALIVE.String() {
 			aliveCnt++
 		} else {
-			unAliveCnt++
+			unaliveCnt++
 		}
 	}
 	tbWriter.SetFooter([]string{
-		fmt.Sprintf("Alive(%d) | Unalive(%d)", aliveCnt, unAliveCnt),
+		fmt.Sprintf("Alive(%d) | Unalive(%d)", aliveCnt, unaliveCnt),
 		fmt.Sprintf("Total(%d)", len(nlist)),
 		fmt.Sprintf("%d", totalRepCnt),
 		fmt.Sprintf("%d", totalPriCnt),
