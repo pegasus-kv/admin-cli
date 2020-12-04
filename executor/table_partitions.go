@@ -47,7 +47,7 @@ func ShowTablePartitions(client *Client, tableName string) error {
 		return err
 	}
 	fmt.Println("[PartitionCount]")
-	printNodeInfo(client, nodes)
+	printNodesInfo(client, nodes)
 
 	type partitionStruct struct {
 		Pidx            int32  `json:"pidx"`

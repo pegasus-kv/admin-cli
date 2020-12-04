@@ -73,7 +73,7 @@ func ListNodes(client *Client) error {
 		}
 	}
 
-	printNodeInfo(client, nodes)
+	printNodesInfo(client, nodes)
 	return nil
 }
 
@@ -116,7 +116,7 @@ func fillNodesInfo(nodes map[string]*nodeInfoStruct, partitions []*replication.P
 	return nodes, nil
 }
 
-func printNodeInfo(client *Client, nodes map[string]*nodeInfoStruct) {
+func printNodesInfo(client *Client, nodes map[string]*nodeInfoStruct) {
 	// render in tabular form
 	var nodeList []interface{}
 	for _, n := range nodes {
