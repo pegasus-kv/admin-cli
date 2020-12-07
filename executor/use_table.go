@@ -17,8 +17,12 @@ func UseTable(client *Client, table string) error {
 		return err
 	}
 
+	if resp.GetErr().Errno == base.ERR_OBJECT_NOT_FOUND.String() {
+		return fmt.Errorf("Table(%s) doesn't exist!", table)
+	}
+
 	if resp.GetErr().Errno != base.ERR_OK.String() {
-		return fmt.Errorf("Use Table(%s) failed: %s", table, resp.GetErr().String())
+		return fmt.Errorf("Query Config failed: %s", resp.GetErr().String())
 	}
 
 	return nil
