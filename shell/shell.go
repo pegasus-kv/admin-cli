@@ -26,14 +26,13 @@ import (
 // App is the global shell app.
 var App *grumble.App
 
-var NameWithVersion = "Pegasus-AdminCli-0.1.0"
+var NameWithVersion = "Pegasus-AdminCli-1.0.0"
 
 // AddCommand registers the command to the global shell app.
 func AddCommand(cmd *grumble.Command) {
 	App.AddCommand(cmd)
 }
 
-// TODO(jiashuo1) some command with table no support verify the table exists
 func init() {
 	App = grumble.New(&grumble.Config{
 		Name:        NameWithVersion,
