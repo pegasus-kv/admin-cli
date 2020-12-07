@@ -32,8 +32,7 @@ func init() {
 
 Please pay attention to the partition number. It usually depends on the table's on-disk storage size.
 To achieve an predictable performance, you should keep the average partition size within a acceptable
-range.
-	`
+range.`
 
 	shell.AddCommand(&grumble.Command{
 		Name:     "create",
