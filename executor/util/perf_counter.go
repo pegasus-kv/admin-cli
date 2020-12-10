@@ -44,10 +44,16 @@ func GetNodeStats(perfClient *aggregate.PerfClient) (map[string]*aggregate.NodeS
 	var nodesStats = make(map[string]*aggregate.NodeStat)
 
 	nodes, err := perfClient.GetNodeStats("replica")
+	var statList []interface{}
+	for _, n := range nodes {
+		statList = append(statList, *n)
+	}
+	SortStructs(statList, "Addr")
 	if err != nil {
 		return nil, err
 	}
-	for _, node := range nodes {
+	for _, stat := range statList {
+		node := stat.(*aggregate.NodeStat)
 		nodesStats[node.Addr] = &aggregate.NodeStat{
 			Addr:  node.Addr,
 			Stats: make(map[string]float64),
