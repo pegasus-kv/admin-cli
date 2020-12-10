@@ -53,7 +53,7 @@ func GetNodeStats(perfClient *aggregate.PerfClient) (map[string]*aggregate.NodeS
 		return nil, err
 	}
 	for _, stat := range statList {
-		node := stat.(*aggregate.NodeStat)
+		node := stat.(aggregate.NodeStat)
 		nodesStats[node.Addr] = &aggregate.NodeStat{
 			Addr:  node.Addr,
 			Stats: make(map[string]float64),
