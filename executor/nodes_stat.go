@@ -87,5 +87,6 @@ func printNodesStatsTabular(client *Client, nodes map[string]*aggregate.NodeStat
 	for _, n := range nodes {
 		valueList = append(valueList, n)
 	}
+	util.SortStructs(valueList, "Addr")
 	t.Render(client, valueList)
 }
