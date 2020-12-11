@@ -117,7 +117,6 @@ func printNodesInfo(client *Client, nodes map[string]*nodeInfoStruct) {
 		nodeList = append(nodeList, *n)
 	}
 	util.SortStructs(nodeList, "Address")
-
 	tabular.New(client, nodeList, func(t *tablewriter.Table) {
 		footerWithTotalCount(t, nodeList)
 	}).Render()
