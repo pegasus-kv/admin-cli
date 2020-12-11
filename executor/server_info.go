@@ -61,8 +61,8 @@ func ServerInfo(client *Client) error {
 			})
 		}
 	}
-	util.SortStructs(metaList, "Node")
-	util.SortStructs(replicaList, "Node")
+	util.SortStructsByField(metaList, "Node")
+	util.SortStructsByField(replicaList, "Node")
 	valueList := append(metaList, replicaList...)
 	tabular.New(client, valueList, func(table *tablewriter.Table) {
 		table.SetAutoWrapText(false)

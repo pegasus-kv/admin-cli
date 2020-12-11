@@ -112,6 +112,6 @@ func printTableStatsTabular(writer io.Writer, tables map[int32]*aggregate.TableS
 	for _, tb := range tables {
 		valueList = append(valueList, *tb)
 	}
-	util.SortStructs(valueList, "AppID")
+	util.SortStructsByField(valueList, "AppID")
 	t.Render(writer, valueList)
 }

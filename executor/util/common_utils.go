@@ -50,7 +50,7 @@ func Str2Gpid(gpid string) (*base.Gpid, error) {
 	return &base.Gpid{Appid: int32(appId), PartitionIndex: int32(partitionId)}, nil
 }
 
-func SortStructs(structs []interface{}, key string) []interface{} {
+func SortStructsByField(structs []interface{}, key string) {
 	sort.Slice(structs, func(i, j int) bool {
 		v1 := reflect.ValueOf(structs[i]).FieldByName(key)
 		v2 := reflect.ValueOf(structs[j]).FieldByName(key)
@@ -62,7 +62,6 @@ func SortStructs(structs []interface{}, key string) []interface{} {
 			panic(fmt.Sprintf("Not support sort %s", v1.Type().Name()))
 		}
 	})
-	return structs
 }
 
 func FormatDate(date int64) string {
