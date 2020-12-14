@@ -136,7 +136,7 @@ func (t *Template) Render(writer io.Writer, rows []interface{}) {
 
 			for n, col := range sect.columns {
 				columnValue := t.colValFunc(col, row)
-				col.aggregator(len(sect.columns), totalRowColumns, n+len(t.commonColNames), columnValue.(float64))
+				col.aggregator(len(rows), totalRowColumns, n+len(t.commonColNames), columnValue.(float64))
 				rowColumns = append(rowColumns, col.formatter(columnValue))
 			}
 			tabWriter.Append(rowColumns)
