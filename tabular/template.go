@@ -131,12 +131,12 @@ func (t *Template) Render(writer io.Writer, rows []interface{}) {
 					continue
 				}
 				value, _ := strconv.ParseFloat(row, 64)
-				defaultAggregator(totalRowColumns, n, value)
+				defaultAggregator(len(rows), totalRowColumns, n, value)
 			}
 
 			for n, col := range sect.columns {
 				columnValue := t.colValFunc(col, row)
-				col.aggregator(totalRowColumns, n+len(t.commonColNames), columnValue.(float64))
+				col.aggregator(len(sect.columns), totalRowColumns, n+len(t.commonColNames), columnValue.(float64))
 				rowColumns = append(rowColumns, col.formatter(columnValue))
 			}
 			tabWriter.Append(rowColumns)
@@ -204,17 +204,17 @@ func megabyteStatFormatter(v interface{}) string {
 type columnValueFormatter func(interface{}) string
 
 // The default column aggregate type, sum(value...)
-func defaultAggregator(totalRowColumns []string, index int, deltaValue float64) {
+func defaultAggregator(rows int, totalRowColumns []string, index int, deltaValue float64) {
 	oldValue, _ := strconv.ParseFloat(totalRowColumns[index], 64)
 	total := oldValue + deltaValue
 	totalRowColumns[index] = strconv.FormatFloat(total, 'g', 5, 64)
 }
 
 // The column aggregate type, average(value...)
-func averageAggregator(totalRowColumns []string, index int, deltaValue float64) {
+func averageAggregator(rows int, totalRowColumns []string, index int, deltaValue float64) {
 	oldValue, _ := strconv.ParseFloat(totalRowColumns[index], 64)
-	average := oldValue + deltaValue/float64(index)
+	average := oldValue + deltaValue/float64(rows)
 	totalRowColumns[index] = strconv.FormatFloat(average, 'g', 5, 64)
 }
 
-type columnValueAggregator func([]string, int, float64)
+type columnValueAggregator func(int, []string, int, float64)
