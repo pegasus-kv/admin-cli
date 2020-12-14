@@ -205,21 +205,15 @@ type columnValueFormatter func(interface{}) string
 
 // The default column aggregate type, sum(value...)
 func defaultAggregator(totalRowColumns []string, index int, deltaValue float64) {
-	oldValue, err := strconv.ParseFloat(totalRowColumns[index], 64)
-	if err != nil {
-		totalRowColumns[index] = "-"
-	}
+	oldValue, _ := strconv.ParseFloat(totalRowColumns[index], 64)
 	total := oldValue + deltaValue
 	totalRowColumns[index] = strconv.FormatFloat(total, 'g', 5, 64)
 }
 
 // The column aggregate type, average(value...)
 func averageAggregator(totalRowColumns []string, index int, deltaValue float64) {
-	oldValue, err := strconv.ParseFloat(totalRowColumns[index], 64)
-	if err != nil {
-		totalRowColumns[index] = "-"
-	}
-	average := (oldValue + deltaValue) / float64(index)
+	oldValue, _ := strconv.ParseFloat(totalRowColumns[index], 64)
+	average := oldValue + deltaValue/float64(index)
 	totalRowColumns[index] = strconv.FormatFloat(average, 'g', 5, 64)
 }
 
