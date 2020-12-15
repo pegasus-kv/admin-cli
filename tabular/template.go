@@ -2,11 +2,11 @@ package tabular
 
 import (
 	"fmt"
+	"gopkg.in/yaml.v2"
 	"io"
 	"strconv"
 
 	"github.com/dustin/go-humanize"
-	"gopkg.in/yaml.v2"
 )
 
 // Template receives a yaml template for printing the tabular contents.
@@ -168,7 +168,9 @@ type ColumnAttributes struct {
 	// If `unit` is "MB", megabyteStatFormatter is used.
 	// Otherwise defaultFormatter is used.
 	formatter columnValueFormatter
-	//
+	// The aggregator is optionally declared in `aggregate`
+	// if `aggregate` is `average`, averageAggregator is used
+	// Otherwise defaultAggregator is used
 	aggregator columnValueAggregator
 }
 
