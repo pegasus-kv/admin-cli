@@ -22,6 +22,7 @@ package executor
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/XiaoMi/pegasus-go-client/idl/admin"
@@ -29,6 +30,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/pegasus-kv/admin-cli/executor/util"
 	"github.com/pegasus-kv/admin-cli/tabular"
+	batchErr "k8s.io/apimachinery/pkg/util/errors"
 )
 
 type nodeInfoStruct struct {
@@ -56,15 +58,31 @@ func ListNodes(client *Client) error {
 		return errTable
 	}
 
-	for _, info := range listTableResp.Infos {
-		queryCfgResp, err := client.Meta.QueryConfig(ctx, info.AppName)
-		if err != nil {
-			return err
+	err = func() error {
+		var mu sync.Mutex
+		var funcs []func() error
+
+		for _, info := range listTableResp.Infos {
+			info := info
+			funcs = append(funcs, func() error {
+				queryCfgResp, err := client.Meta.QueryConfig(ctx, info.AppName)
+				mu.Lock()
+				if err != nil {
+					return err
+				}
+				nodes, err = fillNodesInfo(nodes, queryCfgResp.Partitions)
+				if err != nil {
+					return err
+				}
+				mu.Unlock()
+				return nil
+			})
 		}
-		nodes, err = fillNodesInfo(nodes, queryCfgResp.Partitions)
-		if err != nil {
-			return err
-		}
+		return batchErr.AggregateGoroutines(funcs...)
+	}()
+
+	if err != nil {
+		return err
 	}
 
 	printNodesInfo(client, nodes)
