@@ -24,6 +24,7 @@ type command struct {
 }
 type httpRequest func(addr string, cmd command) (string, error)
 
+//TODO(jiashuo1) has not support update collector config
 func HTTPCommand(client *Client, nodeType session.NodeType, nodeAddr string, name string, actionType string, value int64) error {
 	var nodes []*util.PegasusNode
 	if len(nodeAddr) == 0 {
