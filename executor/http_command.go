@@ -27,7 +27,7 @@ type httpRequest func(addr string, cmd command) (string, error)
 func HTTPCommand(client *Client, nodeType session.NodeType, nodeAddr string, name string, actionType string, value int64) error {
 	var nodes []*util.PegasusNode
 	if len(nodeAddr) == 0 {
-		// send remote-commands to all nodeType nodes
+		// send http-commands to all nodeType nodes
 		nodes = client.Nodes.GetAllNodes(nodeType)
 	} else {
 		n, err := client.Nodes.GetNode(nodeAddr, nodeType)
