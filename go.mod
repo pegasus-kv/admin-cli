@@ -10,6 +10,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.10.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
+	github.com/go-resty/resty/v2 v2.5.0
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.0 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
@@ -24,7 +25,6 @@ require (
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/tidwall/match v1.0.2 // indirect
-	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
 	golang.org/x/sys v0.0.0-20201130171929-760e229fe7c5 // indirect
 	golang.org/x/text v0.3.4 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
