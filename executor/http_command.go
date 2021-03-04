@@ -115,14 +115,14 @@ func printResults(action string, cmd command, results map[*util.PegasusNode]*cmd
 	for n, cmdRes := range results {
 		if cmdRes.err != nil {
 			fmt.Printf("[%s] %s", n.CombinedAddr(), cmdRes.err)
-			return
+			continue
 		}
 
 		var resMap map[string]string
 		err := json.Unmarshal([]byte(cmdRes.resp), &resMap)
 		if err != nil {
 			fmt.Printf("[%s] %s\n", n.CombinedAddr(), cmdRes.resp)
-			return
+			continue
 		}
 
 		if action == "list" {
