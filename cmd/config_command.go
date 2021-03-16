@@ -75,6 +75,6 @@ func executeCommand(c *grumble.Context, ntype session.NodeType) error {
 }
 
 func errMsg() error {
-	return fmt.Errorf("invalid command: \n\thttp-commad meta/replica list: query all config\n\thttp-commad" +
+	return fmt.Errorf("invalid command: \n\tconfig-commad meta/replica list: query all config\n\tconfig-commad" +
 		" meta/replica {configName} `get` or `set {value}`: get or set config value")
 }
