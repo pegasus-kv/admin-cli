@@ -104,7 +104,6 @@ func callHTTP(url string) (string, error) {
 	return string(resp.Body()), nil
 }
 
-// TODO(jiashuo1) format result need be refactored
 func printResults(action string, cmd command, results map[*util.PegasusNode]*cmdResult) {
 	if action == "set" {
 		fmt.Printf("CMD: %s %s %d\n", action, cmd.name, cmd.value)

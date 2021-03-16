@@ -44,7 +44,6 @@ func commandFlagFunc(f *grumble.Flags) {
 	f.String("n", "node", "", "specify server node address, such as 127.0.0.1:34801, empty mean all node")
 }
 
-// TODO(jiashuo1) validate arguments need be refactored
 func executeCommand(c *grumble.Context, ntype session.NodeType) error {
 	var name string
 	var action string
