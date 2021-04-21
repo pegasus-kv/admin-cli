@@ -41,7 +41,9 @@ func init() {
 		Run: func(c *grumble.Context) error {
 			return executeRemoteCommand(c, session.NodeTypeMeta)
 		},
-		AllowArgs: true,
+		Args: func(a *grumble.Args) {
+			a.StringList("command", "<CMD> [ARG1 ARG2 ...]", grumble.Default("help"))
+		},
 	})
 
 	rootCmd.AddCommand(&grumble.Command{
@@ -51,7 +53,9 @@ func init() {
 		Run: func(c *grumble.Context) error {
 			return executeRemoteCommand(c, session.NodeTypeReplica)
 		},
-		AllowArgs: true,
+		Args: func(a *grumble.Args) {
+			a.StringList("command", "<CMD> [ARG1 ARG2 ...]", grumble.Default("help"))
+		},
 	})
 
 	shell.AddCommand(rootCmd)
@@ -63,8 +67,6 @@ func remoteCommandFlagFunc(f *grumble.Flags) {
 }
 
 func executeRemoteCommand(c *grumble.Context, ntype session.NodeType) error {
-	if len(c.Args) == 0 {
-		c.Args = []string{"help"}
-	}
-	return executor.RemoteCommand(pegasusClient, ntype, c.Flags.String("node"), c.Args[0], c.Args[1:])
+	command := c.Args.StringList("command")
+	return executor.RemoteCommand(pegasusClient, ntype, c.Flags.String("node"), command[0], command[1:])
 }

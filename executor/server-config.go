@@ -23,6 +23,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -33,7 +34,9 @@ import (
 )
 
 type httpRequest func(addr string, cmd command) (string, error)
-type printResponse func(nodeType session.NodeType, resp map[*util.PegasusNode]*cmdResult)
+
+// map[*util.PegasusNode]*cmdResult is not sorted, pass nodes is for print sorted result
+type printResponse func(nodeType session.NodeType, sortedNodeList []string, resp map[string]*cmdResult)
 
 type action struct {
 	request httpRequest
@@ -48,7 +51,7 @@ var actionsMap = map[string]action{
 
 var sectionsMap = map[session.NodeType]string{
 	session.NodeTypeMeta:    "meta_server,security",
-	session.NodeTypeReplica: "pegasus.server,security,replication,block_service,pegasus.collector",
+	session.NodeTypeReplica: "pegasus.server,security,replication,block_service",
 	// TODO(jiashuo1) support collector
 }
 
@@ -84,7 +87,13 @@ func ConfigCommand(client *Client, nodeType session.NodeType, nodeAddr string, n
 			value: value,
 		}
 		results := batchCallHTTP(nodes, ac.request, cmd)
-		ac.print(nodeType, results)
+
+		var sortedNodeList []string
+		for _, n := range nodes {
+			sortedNodeList = append(sortedNodeList, n.CombinedAddr())
+		}
+		sort.Strings(sortedNodeList)
+		ac.print(nodeType, sortedNodeList, results)
 	} else {
 		return fmt.Errorf("invalid request type: %s", actionType)
 	}
@@ -92,8 +101,8 @@ func ConfigCommand(client *Client, nodeType session.NodeType, nodeAddr string, n
 	return nil
 }
 
-func batchCallHTTP(nodes []*util.PegasusNode, request httpRequest, cmd command) map[*util.PegasusNode]*cmdResult {
-	results := make(map[*util.PegasusNode]*cmdResult)
+func batchCallHTTP(nodes []*util.PegasusNode, request httpRequest, cmd command) map[string]*cmdResult {
+	results := make(map[string]*cmdResult)
 
 	var mu sync.Mutex
 	var wg sync.WaitGroup
@@ -105,9 +114,9 @@ func batchCallHTTP(nodes []*util.PegasusNode, request httpRequest, cmd command) 
 			result, err := request(node.TCPAddr(), cmd)
 			mu.Lock()
 			if err != nil {
-				results[node] = &cmdResult{err: err}
+				results[node.CombinedAddr()] = &cmdResult{err: err}
 			} else {
-				results[node] = &cmdResult{resp: result}
+				results[node.CombinedAddr()] = &cmdResult{resp: result}
 			}
 			mu.Unlock()
 			wg.Done()
@@ -134,28 +143,33 @@ func listConfig(addr string, cmd command) (string, error) {
 	return callHTTP(url)
 }
 
-func printConfigList(nodeType session.NodeType, results map[*util.PegasusNode]*cmdResult) {
-	fmt.Printf("CMD: list\n")
-	for n, cmdRes := range results {
+func printConfigList(nodeType session.NodeType, sortedNodeList []string, results map[string]*cmdResult) {
+	fmt.Printf("CMD: list \n")
+	for _, node := range sortedNodeList {
+		cmdRes := results[node]
 		if cmdRes.err != nil {
-			fmt.Printf("[%s] %s\n", n.CombinedAddr(), cmdRes.err)
+			fmt.Printf("[%s] %s\n", node, cmdRes.err)
 			continue
 		}
 
 		var respMap map[string]response
 		err := json.Unmarshal([]byte(cmdRes.resp), &respMap)
 		if err != nil {
-			fmt.Printf("[%s] %s\n", n.CombinedAddr(), err)
+			fmt.Printf("[%s] %s\n", node, err)
 			continue
 		}
 
-		fmt.Printf("[%s]\n", n.CombinedAddr())
+		fmt.Printf("[%s]\n", node)
+		var resultSorted []string
 		for _, value := range respMap {
 			if value.Tags == "flag_tag::FT_MUTABLE" && strings.Contains(sectionsMap[nodeType], value.Section) {
-				fmt.Printf("\t[%s] %s=%s\n", value.Section, value.Name, value.Value)
+				resultSorted = append(resultSorted, fmt.Sprintf("\t[%s] %s=%s\n", value.Section, value.Name, value.Value))
 			}
 		}
-		fmt.Println()
+		sort.Strings(resultSorted)
+		resStr := fmt.Sprintf("%s", resultSorted)
+		// resStr is like [...], print need delete the `[` and `]` character
+		fmt.Print(resStr[1 : len(resStr)-1])
 	}
 }
 
@@ -164,27 +178,28 @@ func getConfig(addr string, cmd command) (string, error) {
 	return callHTTP(url)
 }
 
-func printConfigValue(nodeType session.NodeType, results map[*util.PegasusNode]*cmdResult) {
+func printConfigValue(nodeType session.NodeType, sortedNodeList []string, results map[string]*cmdResult) {
 	fmt.Printf("CMD: get \n")
-	for n, cmdRes := range results {
+	for _, node := range sortedNodeList {
+		cmdRes := results[node]
 		if cmdRes.err != nil {
-			fmt.Printf("[%s] %s\n", n.CombinedAddr(), cmdRes.err)
+			fmt.Printf("[%s] %s\n", node, cmdRes.err)
 			continue
 		}
 
 		var resp response
 		err := json.Unmarshal([]byte(cmdRes.resp), &resp)
 		if err != nil {
-			fmt.Printf("[%s] %s\n", n.CombinedAddr(), cmdRes.resp)
+			fmt.Printf("[%s] %s\n", node, cmdRes.resp)
 			continue
 		}
 
 		if !strings.Contains(sectionsMap[nodeType], resp.Section) {
-			fmt.Printf("[%s] %s is not config on %s\n", n.CombinedAddr(), resp.Name, nodeType)
+			fmt.Printf("[%s] %s is not config on %s\n", node, resp.Name, nodeType)
 			continue
 		}
 
-		fmt.Printf("[%s] %s=%s\n", n.CombinedAddr(), resp.Name, resp.Value)
+		fmt.Printf("[%s] %s=%s\n", node, resp.Name, resp.Value)
 	}
 }
 
@@ -193,21 +208,22 @@ func updateConfig(addr string, cmd command) (string, error) {
 	return callHTTP(url)
 }
 
-func printConfigUpdate(nodeType session.NodeType, results map[*util.PegasusNode]*cmdResult) {
+func printConfigUpdate(nodeType session.NodeType, sortedNodeList []string, results map[string]*cmdResult) {
 	fmt.Printf("CMD: set \n")
-	for n, cmdRes := range results {
+	for _, node := range sortedNodeList {
+		cmdRes := results[node]
 		if cmdRes.err != nil {
-			fmt.Printf("[%s] %s\n", n.CombinedAddr(), cmdRes.err)
+			fmt.Printf("[%s] %s\n", node, cmdRes.err)
 			continue
 		}
 
 		var resMap map[string]string
 		err := json.Unmarshal([]byte(cmdRes.resp), &resMap)
 		if err != nil {
-			fmt.Printf("[%s] %s\n", n.CombinedAddr(), err)
+			fmt.Printf("[%s] %s\n", node, err)
 			continue
 		}
 
-		fmt.Printf("[%s] %s\n", n.CombinedAddr(), resMap["update_status"])
+		fmt.Printf("[%s] %s\n", node, resMap["update_status"])
 	}
 }

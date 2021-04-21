@@ -42,7 +42,7 @@ func init() {
 		Run: func(c *grumble.Context) error {
 			return executeCommand(c, session.NodeTypeMeta)
 		},
-		AllowArgs: true,
+		Args: commandArgsFunc,
 	})
 
 	rootCmd.AddCommand(&grumble.Command{
@@ -52,7 +52,7 @@ func init() {
 		Run: func(c *grumble.Context) error {
 			return executeCommand(c, session.NodeTypeReplica)
 		},
-		AllowArgs: true,
+		Args: commandArgsFunc,
 	})
 
 	shell.AddCommand(rootCmd)
@@ -63,31 +63,27 @@ func commandFlagFunc(f *grumble.Flags) {
 	f.String("n", "node", "", "specify server node address, such as 127.0.0.1:34801, empty mean all node")
 }
 
+func commandArgsFunc(a *grumble.Args) {
+	a.StringList("command", "<CMD> [ARG1 ARG2 ...]", grumble.Default("[list]"))
+}
+
 func executeCommand(c *grumble.Context, ntype session.NodeType) error {
-	var name string
-	var action string
-	var value int64
-	if len(c.Args) == 0 {
+	cmd := c.Args.StringList("command")
+	if len(cmd) == 0 {
 		return errMsg()
 	}
-	if len(c.Args) == 1 && c.Args[0] == "list" {
-		action = c.Args[0]
-		return executor.ConfigCommand(pegasusClient, ntype, c.Flags.String("node"), name, action, value)
+	if len(cmd) == 1 && cmd[0] == "list" {
+		return executor.ConfigCommand(pegasusClient, ntype, c.Flags.String("node"), "", "list", 0)
 	}
-	if len(c.Args) == 2 && c.Args[1] == "get" {
-		name = c.Args[0]
-		action = c.Args[1]
-		return executor.ConfigCommand(pegasusClient, ntype, c.Flags.String("node"), name, action, value)
+	if len(cmd) == 2 && cmd[1] == "get" {
+		return executor.ConfigCommand(pegasusClient, ntype, c.Flags.String("node"), cmd[0], "get", 0)
 	}
-	if len(c.Args) == 3 && c.Args[1] == "set" {
-		name = c.Args[0]
-		action = c.Args[1]
-		valueInt, err := strconv.ParseInt(c.Args[2], 10, 64)
+	if len(cmd) == 3 && cmd[1] == "set" {
+		valueInt, err := strconv.ParseInt(cmd[2], 10, 64)
 		if err != nil {
 			return err
 		}
-		value = valueInt
-		return executor.ConfigCommand(pegasusClient, ntype, c.Flags.String("node"), name, action, value)
+		return executor.ConfigCommand(pegasusClient, ntype, c.Flags.String("node"), cmd[0], "set", valueInt)
 	}
 
 	return errMsg()
