@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package cmd
 
 import (
@@ -30,7 +31,7 @@ import (
 
 func init() {
 	rootCmd := &grumble.Command{
-		Name: "config-command",
+		Name: "server-config",
 		Help: "send http get/post to query/update config",
 	}
 
