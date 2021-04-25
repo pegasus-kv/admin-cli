@@ -34,7 +34,7 @@ func ListTables(client *Client, showDropped bool) error {
 		status = admin.AppStatus_AS_AVAILABLE
 	}
 
-	tables, err := client.Meta.ListApps()
+	tables, err := client.Meta.ListApps(status)
 	if err != nil {
 		return err
 	}

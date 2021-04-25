@@ -46,7 +46,7 @@ func ListNodes(client *Client) error {
 		return err
 	}
 
-	apps, errTable := client.Meta.ListApps()
+	apps, errTable := client.Meta.ListAvailableApps()
 	if errTable != nil {
 		return errTable
 	}

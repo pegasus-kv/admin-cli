@@ -67,7 +67,7 @@ func useCompletion(prefix string) []string {
 
 	// TODO(wutao): auto-completes in background
 
-	tables, err := pegasusClient.Meta.ListApps()
+	tables, err := pegasusClient.Meta.ListAvailableApps()
 	if err != nil {
 		return []string{}
 	}

@@ -26,7 +26,7 @@ import (
 
 // ListAppEnvs command
 func ListAppEnvs(c *Client, useTable string) error {
-	tables, err := c.Meta.ListApps()
+	tables, err := c.Meta.ListAvailableApps()
 	if err != nil {
 		return err
 	}

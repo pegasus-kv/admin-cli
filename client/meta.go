@@ -16,6 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package client
 
 import (
@@ -30,10 +31,16 @@ import (
 	"github.com/XiaoMi/pegasus-go-client/session"
 )
 
+// Meta is a helper over pegasus-go-client's primitive session.MetaManager.
+// It aims to provide an easy-to-use API that eliminates some boilerplate code, like
+// context creation, request/response creation, etc.
 type Meta interface {
 	Close() error
 
-	ListApps() ([]*admin.AppInfo, error)
+	// ListAvailableApps lists only available tables.
+	ListAvailableApps() ([]*admin.AppInfo, error)
+
+	ListApps(status admin.AppStatus) ([]*admin.AppInfo, error)
 
 	QueryConfig(tableName string) (*replication.QueryCfgResponse, error)
 
@@ -104,9 +111,13 @@ func (m *rpcBasedMeta) callMeta(methodName string, req interface{}, callback fun
 	return nil
 }
 
-func (m *rpcBasedMeta) ListApps() ([]*admin.AppInfo, error) {
+func (m *rpcBasedMeta) ListAvailableApps() ([]*admin.AppInfo, error) {
+	return m.ListApps(admin.AppStatus_AS_AVAILABLE)
+}
+
+func (m *rpcBasedMeta) ListApps(status admin.AppStatus) ([]*admin.AppInfo, error) {
 	var result []*admin.AppInfo
-	req := &admin.ListAppsRequest{Status: admin.AppStatus_AS_AVAILABLE}
+	req := &admin.ListAppsRequest{Status: status}
 	err := m.callMeta("ListApps", req, func(resp interface{}) {
 		result = resp.(*admin.ListAppsResponse).Infos
 	})
@@ -251,6 +262,9 @@ func (m *rpcBasedMeta) AddDuplication(tableName string, remoteCluster string, fr
 	err := m.callMeta("AddDuplication", req, func(resp interface{}) {
 		result = resp.(*admin.DuplicationAddResponse)
 	})
+	if result != nil && result.IsSetHint() {
+		return result, wrapHintIntoError(*result.Hint, err)
+	}
 	return result, err
 }
 

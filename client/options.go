@@ -16,11 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package client
 
 import "time"
 
-var rpcTimeout time.Duration
+var rpcTimeout = time.Second * 10
 
 // SetRPCTimeout is the global timeout setting of RPC.
 func SetRPCTimeout(d time.Duration) {
