@@ -93,6 +93,7 @@ func (m *rpcBasedMeta) Close() error {
 	return m.meta.Close()
 }
 
+// `callback` always accepts non-nil `resp`.
 func (m *rpcBasedMeta) callMeta(methodName string, req interface{}, callback func(resp interface{})) error {
 	ctx, cancel := context.WithTimeout(context.Background(), rpcTimeout)
 	defer cancel()
@@ -101,14 +102,23 @@ func (m *rpcBasedMeta) callMeta(methodName string, req interface{}, callback fun
 		reflect.ValueOf(ctx),
 		reflect.ValueOf(req),
 	})
-	err := ret[1].Interface().(error)
-	if err != nil {
+
+	// the last returned value is always error
+	ierr := ret[len(ret)-1].Interface()
+	var err error
+	if ierr != nil {
+		err = ierr.(error)
+	}
+
+	if len(ret) == 1 {
 		return err
 	}
 
-	resp := ret[0].Interface()
-	callback(resp)
-	return nil
+	// len(ret) == 2
+	if !ret[0].IsNil() {
+		callback(ret[0].Interface())
+	}
+	return err
 }
 
 func (m *rpcBasedMeta) ListAvailableApps() ([]*admin.AppInfo, error) {
@@ -126,8 +136,7 @@ func (m *rpcBasedMeta) ListApps(status admin.AppStatus) ([]*admin.AppInfo, error
 
 func (m *rpcBasedMeta) QueryConfig(tableName string) (*replication.QueryCfgResponse, error) {
 	var result *replication.QueryCfgResponse
-	req := &replication.QueryCfgRequest{AppName: tableName}
-	err := m.callMeta("QueryConfig", req, func(resp interface{}) {
+	err := m.callMeta("QueryConfig", tableName, func(resp interface{}) {
 		result = resp.(*replication.QueryCfgResponse)
 	})
 	if err == nil {
@@ -150,7 +159,7 @@ func (m *rpcBasedMeta) MetaControl(level admin.MetaFunctionLevel) (oldLevel admi
 }
 
 func (m *rpcBasedMeta) QueryClusterInfo() (map[string]string, error) {
-	var result map[string]string
+	result := make(map[string]string)
 	req := &admin.ClusterInfoRequest{}
 	err := m.callMeta("QueryClusterInfo", req, func(resp interface{}) {
 		keys := resp.(*admin.ClusterInfoResponse).Keys
@@ -242,14 +251,8 @@ func (m *rpcBasedMeta) ModifyDuplication(tableName string, dupid int, status adm
 		Dupid:   int32(dupid),
 		Status:  &status,
 	}
-	var hint string
-	err := m.callMeta("ModifyDuplication", req, func(resp interface{}) {
-		hintPtr := resp.(*admin.DuplicationAddResponse).Hint
-		if hintPtr != nil {
-			hint = *hintPtr
-		}
-	})
-	return wrapHintIntoError(hint, err)
+	err := m.callMeta("ModifyDuplication", req, func(resp interface{}) {})
+	return err
 }
 
 func (m *rpcBasedMeta) AddDuplication(tableName string, remoteCluster string, freezed bool) (*admin.DuplicationAddResponse, error) {
@@ -273,7 +276,7 @@ func (m *rpcBasedMeta) QueryDuplication(tableName string) (*admin.DuplicationQue
 	req := &admin.DuplicationQueryRequest{
 		AppName: tableName,
 	}
-	err := m.callMeta("AddDuplication", req, func(resp interface{}) {
+	err := m.callMeta("QueryDuplication", req, func(resp interface{}) {
 		result = resp.(*admin.DuplicationQueryResponse)
 	})
 	return result, err
