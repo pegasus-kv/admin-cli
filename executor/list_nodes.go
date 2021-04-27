@@ -26,7 +26,7 @@ import (
 	"github.com/XiaoMi/pegasus-go-client/idl/admin"
 	"github.com/XiaoMi/pegasus-go-client/idl/replication"
 	"github.com/olekukonko/tablewriter"
-	"github.com/pegasus-kv/admin-cli/executor/util"
+	"github.com/pegasus-kv/admin-cli/util"
 	"github.com/pegasus-kv/admin-cli/tabular"
 	batchErr "k8s.io/apimachinery/pkg/util/errors"
 )

@@ -29,10 +29,10 @@ import (
 	"github.com/pegasus-kv/collector/aggregate"
 )
 
-// PegasusNode is a representation of MetaServer and ReplicaServer, with address and node type.
+// PegasusNode is a representation of MetaServer and ReplicaServer.
 // Compared to session.NodeSession, it extends with more detailed information.
 type PegasusNode struct {
-	// the session is nil by default, it will be initialized when needed.
+	// the session is nil by default, it will be initialized only when needed.
 	session session.NodeSession
 
 	IP net.IP
@@ -59,6 +59,7 @@ func (n *PegasusNode) String() string {
 }
 
 // Replica returns a ReplicaSession if this node is a ReplicaServer.
+// Will initialize the TCP connection.
 func (n *PegasusNode) Replica() *session.ReplicaSession {
 	if n.Type != session.NodeTypeReplica {
 		panic(fmt.Sprintf("%s is not replica", n))
@@ -70,6 +71,7 @@ func (n *PegasusNode) Replica() *session.ReplicaSession {
 }
 
 // Session returns a tcp session to the node.
+// Will initialize the TCP connection.
 func (n *PegasusNode) Session() session.NodeSession {
 	if n.session == nil {
 		n.session = session.NewNodeSession(n.TCPAddr(), session.NodeTypeReplica)

@@ -22,7 +22,7 @@ package executor
 import (
 	"github.com/XiaoMi/pegasus-go-client/idl/admin"
 	"github.com/pegasus-kv/admin-cli/client"
-	"github.com/pegasus-kv/admin-cli/executor/util"
+	"github.com/pegasus-kv/admin-cli/util"
 	"github.com/pegasus-kv/admin-cli/tabular"
 )
 
