@@ -318,9 +318,8 @@ func (m *rpcBasedMeta) RecallApp(originTableID int, newTableName string) (*admin
 func getNodeAddress(n *util.PegasusNode) *base.RPCAddress {
 	if n == nil {
 		return &base.RPCAddress{}
-	} else {
-		return base.NewRPCAddress(n.IP, n.Port)
 	}
+	return base.NewRPCAddress(n.IP, n.Port)
 }
 
 func newProposalAction(target *util.PegasusNode, node *util.PegasusNode, cfgType admin.ConfigType) *admin.ConfigurationProposalAction {
