@@ -315,10 +315,18 @@ func (m *rpcBasedMeta) RecallApp(originTableID int, newTableName string) (*admin
 	return result, err
 }
 
+func getNodeAddress(n *util.PegasusNode) *base.RPCAddress {
+	if n == nil {
+		return &base.RPCAddress{}
+	} else {
+		return base.NewRPCAddress(n.IP, n.Port)
+	}
+}
+
 func newProposalAction(target *util.PegasusNode, node *util.PegasusNode, cfgType admin.ConfigType) *admin.ConfigurationProposalAction {
 	return &admin.ConfigurationProposalAction{
-		Target: base.NewRPCAddress(target.IP, target.Port),
-		Node:   base.NewRPCAddress(node.IP, node.Port),
+		Target: getNodeAddress(target),
+		Node:   getNodeAddress(node),
 		Type:   cfgType,
 	}
 }

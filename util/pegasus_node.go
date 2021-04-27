@@ -79,8 +79,11 @@ func (n *PegasusNode) Session() session.NodeSession {
 	return n.session
 }
 
-// newNodeFromTCPAddr creates a node from tcp address.
-func newNodeFromTCPAddr(addr string, ntype session.NodeType) *PegasusNode {
+// NewNodeFromTCPAddr creates a node from tcp address.
+// NOTE:
+//  - Will not initialize TCP connection unless needed.
+//  - Should not be called too frequently because it costs 1 DNS resolution.
+func NewNodeFromTCPAddr(addr string, ntype session.NodeType) *PegasusNode {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		// the addr given is always trusted
@@ -125,11 +128,11 @@ func NewPegasusNodeManager(metaAddrs []string, replicaAddrs []string) *PegasusNo
 		nodes:            make(map[string]*PegasusNode),
 	}
 	for _, addr := range metaAddrs {
-		n := newNodeFromTCPAddr(addr, session.NodeTypeMeta)
+		n := NewNodeFromTCPAddr(addr, session.NodeTypeMeta)
 		m.nodes[n.TCPAddr()] = n
 	}
 	for _, addr := range replicaAddrs {
-		n := newNodeFromTCPAddr(addr, session.NodeTypeReplica)
+		n := NewNodeFromTCPAddr(addr, session.NodeTypeReplica)
 		m.nodes[n.TCPAddr()] = n
 	}
 	return m
@@ -140,7 +143,7 @@ func NewPegasusNodeManager(metaAddrs []string, replicaAddrs []string) *PegasusNo
 func (m *PegasusNodeManager) MustGetReplica(addr string) *PegasusNode {
 	n, err := m.GetNode(addr, session.NodeTypeReplica)
 	if err != nil {
-		n = newNodeFromTCPAddr(addr, session.NodeTypeReplica)
+		n = NewNodeFromTCPAddr(addr, session.NodeTypeReplica)
 		m.mu.Lock()
 		m.nodes[addr] = n
 		m.replicaAddresses = append(m.replicaAddresses, addr)
