@@ -122,6 +122,7 @@ func TestFakeCluster(t *testing.T) {
 	assertNoMissingReplicaInCluster(t, expectedTotalPartitions)
 }
 
+// ensure 3-replica for every partitions are not distributed on the same node.
 func assertReplicasNotOnSameNode(t *testing.T) {
 	tables, _ := fakePegasusCluster.meta.ListAvailableApps()
 	for _, tb := range tables {

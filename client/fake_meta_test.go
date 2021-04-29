@@ -20,6 +20,8 @@
 package client
 
 import (
+	"fmt"
+
 	"github.com/XiaoMi/pegasus-go-client/idl/admin"
 	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/XiaoMi/pegasus-go-client/idl/replication"
@@ -137,18 +139,8 @@ func (m *fakeMeta) RecallApp(int, string) (*admin.AppInfo, error) {
 }
 
 func (m *fakeMeta) Balance(pid *base.Gpid, opType BalanceType, from *util.PegasusNode, to *util.PegasusNode) error {
-	var fakeFrom, fakeTo *fakeNode
-	for _, n := range fakePegasusCluster.nodes {
-		if n.n.TCPAddr() == from.TCPAddr() {
-			fakeFrom = n
-		}
-		if n.n.TCPAddr() == to.TCPAddr() {
-			fakeTo = n
-		}
-	}
-	if fakeFrom == nil || fakeTo == nil {
-		panic("no corresponding node")
-	}
+	fakeFrom := findNodeInFakeCluster(from)
+	fakeTo := findNodeInFakeCluster(to)
 
 	switch opType {
 	case BalanceMovePri:
@@ -156,12 +148,34 @@ func (m *fakeMeta) Balance(pid *base.Gpid, opType BalanceType, from *util.Pegasu
 		fakeTo.primaries[*pid] = true
 		delete(fakeTo.secondaries, *pid)
 		fakeFrom.secondaries[*pid] = true
-		return nil
 	default:
 		panic("unimplemented")
 	}
+	return nil
 }
 
-func (m *fakeMeta) Propose(*base.Gpid, admin.ConfigType, *util.PegasusNode, *util.PegasusNode) error {
-	panic("unimplemented")
+func (m *fakeMeta) Propose(pid *base.Gpid, opType admin.ConfigType, target *util.PegasusNode, node *util.PegasusNode) error {
+	fakeTarget := findNodeInFakeCluster(target)
+
+	switch opType {
+	case admin.ConfigType_CT_DOWNGRADE_TO_INACTIVE:
+		delete(fakeTarget.primaries, *pid)
+		delete(fakeTarget.secondaries, *pid)
+	default:
+		panic("unimplemented")
+	}
+	return nil
+}
+
+func findNodeInFakeCluster(pn *util.PegasusNode) *fakeNode {
+	var ret *fakeNode
+	for _, n := range fakePegasusCluster.nodes {
+		if n.n.TCPAddr() == pn.TCPAddr() {
+			ret = n
+		}
+	}
+	if ret == nil {
+		panic(fmt.Sprintf("no corresponding node %s", pn.TCPAddr()))
+	}
+	return ret
 }

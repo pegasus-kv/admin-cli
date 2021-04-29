@@ -40,3 +40,21 @@ func TestMigratePrimariesOut(t *testing.T) {
 		assertNoMissingReplicaInCluster(t, 16)
 	}
 }
+
+func TestDowngradeNode(t *testing.T) {
+	fakePegasusCluster = newFakeCluster(4)
+	createFakeTable("test", 16)
+
+	replicaServer := fakePegasusCluster.nodes[0]
+	effectedReplicas := len(replicaServer.primaries) + len(replicaServer.secondaries)
+	err := DowngradeNode(fakePegasusCluster.meta, replicaServer.n)
+	assert.NoError(t, err)
+
+	assert.Empty(t, replicaServer.primaries)
+	assert.Empty(t, replicaServer.secondaries)
+	tbHealthInfo, _ := GetTableHealthInfo(fakePegasusCluster.meta, "test")
+	assert.Equal(t, tbHealthInfo.Unhealthy, effectedReplicas)
+	assert.Equal(t, tbHealthInfo.FullHealthy, 16-effectedReplicas)
+	assert.Equal(t, tbHealthInfo.ReadUnhealthy, effectedReplicas)
+	assert.Equal(t, tbHealthInfo.WriteUnhealthy, 0)
+}

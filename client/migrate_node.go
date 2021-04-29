@@ -126,7 +126,7 @@ func MigratePrimariesOut(meta Meta, node *util.PegasusNode) error {
 }
 
 // DowngradeNode sets all secondaries from the specified node to inactive state.
-// NOTE: this step requires that the node has no primary, in that case error is returned.
+// NOTE: this step requires that the node has no primary, otherwise error is returned.
 func DowngradeNode(meta Meta, node *util.PegasusNode) error {
 	cmd := fmt.Sprintf("DowngradeNode node=%s", node.CombinedAddr())
 	log.Info(cmd)
