@@ -56,7 +56,9 @@ func (m *fakeMeta) QueryConfig(tbName string) (*replication.QueryCfgResponse, er
 			resp.PartitionCount = app.PartitionCount
 			resp.Partitions = make([]*replication.PartitionConfiguration, app.PartitionCount)
 			for i := range resp.Partitions {
-				resp.Partitions[i] = &replication.PartitionConfiguration{Pid: &base.Gpid{Appid: app.AppID, PartitionIndex: int32(i)}}
+				resp.Partitions[i] = &replication.PartitionConfiguration{
+					Pid: &base.Gpid{Appid: app.AppID, PartitionIndex: int32(i)},
+				}
 			}
 
 			for _, n := range fakePegasusCluster.nodes {
@@ -155,12 +157,12 @@ func (m *fakeMeta) Balance(pid *base.Gpid, opType BalanceType, from *util.Pegasu
 }
 
 func (m *fakeMeta) Propose(pid *base.Gpid, opType admin.ConfigType, target *util.PegasusNode, node *util.PegasusNode) error {
-	fakeTarget := findNodeInFakeCluster(target)
+	fakeNode := findNodeInFakeCluster(node)
 
 	switch opType {
 	case admin.ConfigType_CT_DOWNGRADE_TO_INACTIVE:
-		delete(fakeTarget.primaries, *pid)
-		delete(fakeTarget.secondaries, *pid)
+		delete(fakeNode.primaries, *pid)
+		delete(fakeNode.secondaries, *pid)
 	default:
 		panic("unimplemented")
 	}

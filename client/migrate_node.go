@@ -153,10 +153,11 @@ func DowngradeNode(meta Meta, node *util.PegasusNode) error {
 				return fmt.Errorf("%s failed: no primary should be on this node", tbCmd)
 			}
 
-			proposeCmd := tbCmd + fmt.Sprintf(" node=%s gpid=%s", node.CombinedAddr(), part.Pid)
+			pri := replicaNode(part.Primary)
+			proposeCmd := tbCmd + fmt.Sprintf(" target=%s gpid=%s", pri.CombinedAddr(), part.Pid)
 			log.Info(proposeCmd)
 
-			err := meta.Propose(part.Pid, admin.ConfigType_CT_DOWNGRADE_TO_INACTIVE, replicaNode(part.Primary), node)
+			err := meta.Propose(part.Pid, admin.ConfigType_CT_DOWNGRADE_TO_INACTIVE, pri, node)
 			if err != nil {
 				return fmt.Errorf("%s failed: %s", proposeCmd, err)
 			}
