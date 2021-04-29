@@ -81,9 +81,12 @@ func replicaNode(addr *base.RPCAddress) *util.PegasusNode {
 	return util.NewNodeFromTCPAddr(addr.GetAddress(), session.NodeTypeReplica)
 }
 
-// MigratePrimariesOut all tables from the specified node.
+// MigratePrimariesOut migrates all primaries out from the specified node.
+// Internally, for every partition it merely swaps the roles of primary and secondary,
+// so it incurs no data migration.
+// Eventually, the node will have no primaries because they are all turned to secondaries.
 func MigratePrimariesOut(meta Meta, node *util.PegasusNode) error {
-	cmd := fmt.Sprintf("MigratePrimariesOut from=%s", node.String())
+	cmd := fmt.Sprintf("MigratePrimariesOut from=%s", node.CombinedAddr())
 	log.Info(cmd)
 
 	if err := SetMetaLevelSteady(meta); err != nil {
@@ -110,7 +113,7 @@ func MigratePrimariesOut(meta Meta, node *util.PegasusNode) error {
 			sec := part.Secondaries[secIdx]
 			to := replicaNode(sec)
 
-			balanceCmd := tbCmd + fmt.Sprintf(" to=%s gpid=%s", to.String(), part.Pid)
+			balanceCmd := tbCmd + fmt.Sprintf(" to=%s gpid=%s", to.CombinedAddr(), part.Pid)
 			log.Info(balanceCmd)
 
 			err := meta.Balance(part.Pid, BalanceMovePri, from, to)
@@ -125,7 +128,7 @@ func MigratePrimariesOut(meta Meta, node *util.PegasusNode) error {
 // DowngradeNode sets all secondaries from the specified node to inactive state.
 // NOTE: this step requires that the node has no primary, in that case error is returned.
 func DowngradeNode(meta Meta, node *util.PegasusNode) error {
-	cmd := fmt.Sprintf("DowngradeNode node=%s", node.String())
+	cmd := fmt.Sprintf("DowngradeNode node=%s", node.CombinedAddr())
 	log.Info(cmd)
 
 	if err := SetMetaLevelSteady(meta); err != nil {
@@ -150,7 +153,7 @@ func DowngradeNode(meta Meta, node *util.PegasusNode) error {
 				return fmt.Errorf("%s failed: no primary should be on this node", tbCmd)
 			}
 
-			proposeCmd := tbCmd + fmt.Sprintf(" node=%s gpid=%s", node.String(), part.Pid)
+			proposeCmd := tbCmd + fmt.Sprintf(" node=%s gpid=%s", node.CombinedAddr(), part.Pid)
 			log.Info(proposeCmd)
 
 			err := meta.Propose(part.Pid, admin.ConfigType_CT_DOWNGRADE_TO_INACTIVE, replicaNode(part.Primary), node)
