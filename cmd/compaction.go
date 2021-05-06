@@ -11,12 +11,13 @@ func init() {
 		Name: "set-compaction-operations",
 		Help: "set compaction operations and rules",
 		Flags: func(f *grumble.Flags) {
+			f.String("t", "table", "", "table")
 			/**
 			 *	operation
 			 **/
-			f.String("o", "operation-type", "", "operation type, for example, update-ttl/delete")
+			f.String("o", "operation-type", "delete", "operation type, for example: delete/update-ttl")
 			// update ttl operation
-			f.String("u", "update-ttl-type", "", "update ttl operation type")
+			f.String("u", "update-ttl", "", "update ttl operation type, for example: from_now/from_current/timestamp")
 			f.Uint("e", "expire-timestamp", 0, "expire timestamp")
 			/**
 			 *  rule
@@ -34,6 +35,7 @@ func init() {
 		Run: func(c *grumble.Context) error {
 			return executor.SetCompaction(
 				pegasusClient,
+				c.Flags.String("table"),
 				c.Flags.String("operation-type"),
 				c.Flags.String("update-ttl-type"),
 				c.Flags.Uint("expire-timestamp"),
