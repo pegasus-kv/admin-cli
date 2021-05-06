@@ -16,7 +16,7 @@ func SetCompaction(client *Client, tableName string,
 		return fmt.Errorf("table name cannot be empty")
 	}
 
-	json, err := generateCompactionEnv(
+	json, err := generateCompactionEnv(client, tableName,
 		operationType, updateTTLType, expireTimestamp,
 		hashkeyPattern, hashkeyMatch,
 		sortkeyPattern, sortkeyMatch,
@@ -57,8 +57,8 @@ type timeRangeRuleParams struct {
 	StopTimestamp  uint64 `json:"stop_timestamp"`
 }
 
-func generateCompactionEnv(operationType string,
-	updateTTLType string, expireTimestamp uint,
+func generateCompactionEnv(client *Client, tableName string,
+	operationType string, updateTTLType string, expireTimestamp uint,
 	hashkeyPattern string, hashkeyMatch string,
 	sortkeyPattern string, sortkeyMatch string,
 	startTimestamp int64, stopTimestamp int64) (string, error) {
@@ -80,7 +80,15 @@ func generateCompactionEnv(operationType string,
 		return "", err
 	}
 
+	compactionJSON, err := GetAppEnv(client, tableName, userSpecifiedCompaction)
+	if err != nil {
+		return "", err
+	}
 	var operations compactionOperations
+	if compactionJSON != "" {
+		_ = json.Unmarshal([]byte(compactionJSON), &operations)
+	}
+
 	operations.Ops = append(operations.Ops, *operation)
 	res, _ := json.Marshal(operations)
 	return string(res), nil

@@ -8,8 +8,8 @@ import (
 
 func init() {
 	shell.AddCommand(&grumble.Command{
-		Name: "set-compaction-operations",
-		Help: "set compaction operations and rules",
+		Name: "add-compaction-operations",
+		Help: "add compaction operations and rules",
 		Flags: func(f *grumble.Flags) {
 			f.String("t", "table", "", "table")
 			/**
