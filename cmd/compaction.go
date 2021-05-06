@@ -45,7 +45,7 @@ func init() {
 				c.Flags.String("sortkey-match"),
 				c.Flags.Int64("start-timestamp"),
 				c.Flags.Int64("stop-timestamp"),
-				)
+			)
 		},
 	})
 }

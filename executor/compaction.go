@@ -34,27 +34,27 @@ func SetCompaction(client *Client, tableName string,
 // json Helper
 type compactionRule struct {
 	RuleType string `json:"type"`
-	Params string `json:"params"`
+	Params   string `json:"params"`
 }
 type compactionOperation struct {
-	OpType string `json:"type"`
-	Params string `json:"params"`
-	Rules []compactionRule `json:"rules"`
+	OpType string           `json:"type"`
+	Params string           `json:"params"`
+	Rules  []compactionRule `json:"rules"`
 }
 type updateTTLParams struct {
 	UpdateTTLOpType string `json:"type"`
-	timestamp uint `json:"timestamp"`
+	Timestamp       uint   `json:"timestamp"`
 }
 type compactionOperations struct {
 	Ops []compactionOperation `json:"ops"`
 }
 type keyRuleParams struct {
-	Pattern string `json:"pattern"`
+	Pattern   string `json:"pattern"`
 	MatchType string `json:"match_type"`
 }
 type timeRangeRuleParams struct {
 	StartTimestamp uint64 `json:"start_timestamp"`
-	StopTimestamp uint64 `json:"stop_timestamp"`
+	StopTimestamp  uint64 `json:"stop_timestamp"`
 }
 
 func generateCompactionEnv(operationType string,
@@ -67,12 +67,10 @@ func generateCompactionEnv(operationType string,
 	switch operationType {
 	case "delete":
 		operation.OpType = "FOT_DELETE"
-	break
 	case "update_ttl":
 		if operation, err = generateUpdateTTLOperation(updateTTLType, expireTimestamp); err != nil {
 			return "", err
 		}
-	break
 	default:
 		return "", fmt.Errorf("invalid operation type")
 	}
@@ -90,17 +88,14 @@ func generateCompactionEnv(operationType string,
 
 func generateUpdateTTLOperation(updateTTLType string, expireTimestamp uint) (*compactionOperation, error) {
 	var params updateTTLParams
-	params.timestamp = expireTimestamp
+	params.Timestamp = expireTimestamp
 	switch updateTTLType {
 	case "from_now":
 		params.UpdateTTLOpType = "UTOT_FROM_NOW"
-		break
 	case "from_current":
 		params.UpdateTTLOpType = "UTOT_FROM_CURRENT"
-		break
 	case "timestamp":
 		params.UpdateTTLOpType = "UTOT_TIMESTAMP"
-		break
 	default:
 		return nil, fmt.Errorf("invalid update ttl type")
 	}
@@ -145,13 +140,10 @@ func generateKeyRule(ruleType string, pattern string, match string) (*compaction
 	switch match {
 	case "anywhere":
 		params.MatchType = "SMT_MATCH_ANYWHERE"
-		break
 	case "prefix":
 		params.MatchType = "SMT_MATCH_PREFIX"
-		break
 	case "postfix":
 		params.MatchType = "SMT_MATCH_POSTFIX"
-		break
 	default:
 		return nil, fmt.Errorf("invalid match type")
 	}
