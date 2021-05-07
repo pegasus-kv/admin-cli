@@ -63,7 +63,7 @@ func generateCompactionEnv(client *Client, tableName string,
 	switch operationType {
 	case "delete":
 		operation.OpType = "FOT_DELETE"
-	case "update_ttl":
+	case "update-ttl":
 		if operation, err = generateUpdateTTLOperation(updateTTLType, expireTimestamp); err != nil {
 			return "", err
 		}
