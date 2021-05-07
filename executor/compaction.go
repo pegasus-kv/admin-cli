@@ -138,7 +138,7 @@ func generateRules(hashkeyPattern string, hashkeyMatch string,
 		res = append(res, *rule)
 	}
 
-	if startTimestamp < -1 || stopTimestamp < -1 {
+	if startTimestamp >= 0 && stopTimestamp >= 0 {
 		res = append(res, generateTimeRangeRule(startTimestamp, stopTimestamp))
 	}
 	return res, nil
