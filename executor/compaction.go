@@ -31,7 +31,7 @@ func SetCompaction(client *Client, tableName string,
 	return nil
 }
 
-// json Helper
+// json helpers
 type compactionRule struct {
 	RuleType string `json:"type"`
 	Params   string `json:"params"`
