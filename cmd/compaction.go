@@ -11,7 +11,6 @@ func init() {
 		Name: "add-compaction-operation",
 		Help: "add compaction operation and the corresponding rules",
 		Flags: func(f *grumble.Flags) {
-			f.String("t", "table", "", "table")
 			/**
 			 *	operation
 			 **/
@@ -32,10 +31,10 @@ func init() {
 			f.Int64L("start-timestamp", -1, "expire time filter, start timestamp")
 			f.Int64L("stop-timestamp", -1, "expire time filter, stop timestamp")
 		},
-		Run: func(c *grumble.Context) error {
+		Run: shell.RequireUseTable(func(c *shell.Context) error {
 			return executor.SetCompaction(
 				pegasusClient,
-				c.Flags.String("table"),
+				c.UseTable,
 				c.Flags.String("operation-type"),
 				c.Flags.String("update-ttl-type"),
 				c.Flags.Uint("expire-timestamp"),
@@ -46,6 +45,6 @@ func init() {
 				c.Flags.Int64("start-timestamp"),
 				c.Flags.Int64("stop-timestamp"),
 			)
-		},
+		}),
 	})
 }

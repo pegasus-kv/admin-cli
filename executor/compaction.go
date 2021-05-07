@@ -12,10 +12,6 @@ func SetCompaction(client *Client, tableName string,
 	hashkeyPattern string, hashkeyMatch string,
 	sortkeyPattern string, sortkeyMatch string,
 	startTimestamp int64, stopTimestamp int64) error {
-	if tableName == "" {
-		return fmt.Errorf("table name cannot be empty")
-	}
-
 	json, err := generateCompactionEnv(client, tableName,
 		operationType, updateTTLType, expireTimestamp,
 		hashkeyPattern, hashkeyMatch,
