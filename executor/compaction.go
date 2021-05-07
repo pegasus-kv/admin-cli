@@ -124,7 +124,7 @@ func generateRules(hashkeyPattern string, hashkeyMatch string,
 	var err error
 	if hashkeyPattern != "" {
 		var rule *compactionRule
-		if rule, err = generateKeyRule("FRT_HASKKEY_PATTERN", hashkeyPattern, hashkeyMatch); err != nil {
+		if rule, err = generateKeyRule("FRT_HASHKEY_PATTERN", hashkeyPattern, hashkeyMatch); err != nil {
 			return nil, err
 		}
 		res = append(res, *rule)
