@@ -36,7 +36,7 @@ func init() {
 				pegasusClient,
 				c.UseTable,
 				c.Flags.String("operation-type"),
-				c.Flags.String("update-ttl-type"),
+				c.Flags.String("update-ttl"),
 				c.Flags.Uint("expire-timestamp"),
 				c.Flags.String("hashkey-pattern"),
 				c.Flags.String("hashkey-match"),

@@ -59,7 +59,7 @@ func generateCompactionEnv(client *Client, tableName string,
 	sortkeyPattern string, sortkeyMatch string,
 	startTimestamp int64, stopTimestamp int64) (string, error) {
 	var err error
-	var operation *compactionOperation
+	var operation = &compactionOperation{}
 	switch operationType {
 	case "delete":
 		operation.OpType = "FOT_DELETE"
@@ -85,6 +85,12 @@ func generateCompactionEnv(client *Client, tableName string,
 		_ = json.Unmarshal([]byte(compactionJSON), &operations)
 	}
 
+	for _, op := range operations.Ops {
+		if op.OpType == operation.OpType {
+			return "", fmt.Errorf("operation type is already exist")
+		}
+	}
+
 	operations.Ops = append(operations.Ops, *operation)
 	res, _ := json.Marshal(operations)
 	return string(res), nil
@@ -104,7 +110,7 @@ func generateUpdateTTLOperation(updateTTLType string, expireTimestamp uint) (*co
 		return nil, fmt.Errorf("invalid update ttl type")
 	}
 
-	var operation *compactionOperation
+	var operation = &compactionOperation{}
 	operation.OpType = "FOT_UPDATE_TTL"
 	paramsBytes, _ := json.Marshal(params)
 	operation.Params = string(paramsBytes)
@@ -152,7 +158,7 @@ func generateKeyRule(ruleType string, pattern string, match string) (*compaction
 		return nil, fmt.Errorf("invalid match type")
 	}
 
-	var rule *compactionRule
+	var rule = &compactionRule{}
 	rule.RuleType = ruleType
 	paramsBytes, _ := json.Marshal(params)
 	rule.Params = string(paramsBytes)
