@@ -12,20 +12,20 @@ func init() {
 		Help: "add compaction operation and the corresponding rules",
 		Flags: func(f *grumble.Flags) {
 			/**
-			 *	operation
+			 *	operations
 			 **/
 			f.String("o", "operation-type", "delete", "operation type, for example: delete/update-ttl")
 			// update ttl operation
 			f.String("u", "update-ttl", "", "update ttl operation type, for example: from_now/from_current/timestamp")
 			f.Uint("e", "expire-timestamp", 0, "expire timestamp")
 			/**
-			 *  rule
+			 *  rules
 			 **/
 			// hashkey filter
-			f.String("h", "hashkey-pattern", "", "hash key pattern")
+			f.StringL("hashkey-pattern", "", "hash key pattern")
 			f.StringL("hashkey-match", "anywhere", "hash key's match type, for example: anywhere/prefix/postfix")
 			// sortkey filter
-			f.String("s", "sortkey-pattern", "", "sort key pattern")
+			f.StringL("sortkey-pattern", "", "sort key pattern")
 			f.StringL("sortkey-match", "anywhere", "sort key's match type, for example: anywhere/prefix/postfix")
 			// expire time filter
 			f.Int64L("start-timestamp", -1, "expire time filter, start timestamp")
