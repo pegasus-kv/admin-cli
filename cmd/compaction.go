@@ -14,7 +14,7 @@ func init() {
 			/**
 			 *	operations
 			 **/
-			f.String("o", "operation-type", "delete", "operation type, for example: delete/update-ttl")
+			f.String("o", "operation-type", "", "operation type, for example: delete/update-ttl")
 			// update ttl operation
 			f.String("u", "update-ttl", "", "update ttl operation type, for example: from_now/from_current/timestamp")
 			f.Uint("e", "expire-timestamp", 0, "expire timestamp")

@@ -113,10 +113,11 @@ func generateUpdateTTLOperation(updateTTLType string, expireTimestamp uint) (*co
 		return nil, fmt.Errorf("invalid update ttl type")
 	}
 
-	var operation = &compactionOperation{}
-	operation.OpType = "FOT_UPDATE_TTL"
 	paramsBytes, _ := json.Marshal(params)
-	operation.Params = string(paramsBytes)
+	var operation = &compactionOperation{
+		OpType: "FOT_UPDATE_TTL",
+		Params: string(paramsBytes),
+	}
 	return operation, nil
 }
 
@@ -161,10 +162,11 @@ func generateKeyRule(ruleType string, pattern string, match string) (*compaction
 		return nil, fmt.Errorf("invalid match type")
 	}
 
-	var rule = &compactionRule{}
-	rule.RuleType = ruleType
 	paramsBytes, _ := json.Marshal(params)
-	rule.Params = string(paramsBytes)
+	var rule = &compactionRule{
+		RuleType: ruleType,
+		Params:   string(paramsBytes),
+	}
 	return rule, nil
 }
 
@@ -174,8 +176,8 @@ func generateTimeRangeRule(startTimestamp int64, stopTimestamp int64) compaction
 	params.StopTimestamp = uint64(stopTimestamp)
 	paramsBytes, _ := json.Marshal(params)
 
-	var rule compactionRule
-	rule.RuleType = "FRT_EXPIRE_TIME_RANGE"
-	rule.Params = string(paramsBytes)
-	return rule
+	return compactionRule{
+		RuleType: "FRT_EXPIRE_TIME_RANGE",
+		Params:   string(paramsBytes),
+	}
 }
