@@ -75,6 +75,9 @@ func generateCompactionEnv(client *Client, tableName string,
 		sortkeyPattern, sortkeyMatch, startTimestamp, stopTimestamp); err != nil {
 		return "", err
 	}
+	if len(operation.Rules) == 0 {
+		return "", fmt.Errorf("no rules specified")
+	}
 
 	compactionJSON, err := GetAppEnv(client, tableName, userSpecifiedCompaction)
 	if err != nil {
