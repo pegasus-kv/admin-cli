@@ -68,7 +68,7 @@ func generateCompactionEnv(client *Client, tableName string,
 			return "", err
 		}
 	default:
-		return "", fmt.Errorf("invalid operation type")
+		return "", fmt.Errorf("invalid operation type {%s}", operationType)
 	}
 
 	if operation.Rules, err = generateRules(hashkeyPattern, hashkeyMatch,
@@ -90,7 +90,7 @@ func generateCompactionEnv(client *Client, tableName string,
 
 	for _, op := range operations.Ops {
 		if op.OpType == operation.OpType {
-			return "", fmt.Errorf("operation type is already exist")
+			return "", fmt.Errorf("operation type {%s} is already exist", op.OpType)
 		}
 	}
 
@@ -110,7 +110,7 @@ func generateUpdateTTLOperation(updateTTLType string, expireTimestamp uint) (*co
 	case "timestamp":
 		params.UpdateTTLOpType = "UTOT_TIMESTAMP"
 	default:
-		return nil, fmt.Errorf("invalid update ttl type")
+		return nil, fmt.Errorf("invalid update ttl type {%s}", updateTTLType)
 	}
 
 	paramsBytes, _ := json.Marshal(params)
@@ -159,7 +159,7 @@ func generateKeyRule(ruleType string, pattern string, match string) (*compaction
 	case "postfix":
 		params.MatchType = "SMT_MATCH_POSTFIX"
 	default:
-		return nil, fmt.Errorf("invalid match type")
+		return nil, fmt.Errorf("invalid match type {%s}", match)
 	}
 
 	paramsBytes, _ := json.Marshal(params)
