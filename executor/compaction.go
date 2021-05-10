@@ -88,12 +88,6 @@ func generateCompactionEnv(client *Client, tableName string,
 		_ = json.Unmarshal([]byte(compactionJSON), &operations)
 	}
 
-	for _, op := range operations.Ops {
-		if op.OpType == operation.OpType {
-			return "", fmt.Errorf("operation type {%s} is already exist", op.OpType)
-		}
-	}
-
 	operations.Ops = append(operations.Ops, *operation)
 	res, _ := json.Marshal(operations)
 	return string(res), nil
