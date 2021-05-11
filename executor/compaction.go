@@ -49,8 +49,8 @@ type keyRuleParams struct {
 	MatchType string `json:"match_type"`
 }
 type timeRangeRuleParams struct {
-	StartTimestamp uint64 `json:"start_timestamp"`
-	StopTimestamp  uint64 `json:"stop_timestamp"`
+	StartTimestamp uint32 `json:"start_timestamp"`
+	StopTimestamp  uint32 `json:"stop_timestamp"`
 }
 
 func generateCompactionEnv(client *Client, tableName string,
@@ -166,8 +166,8 @@ func generateKeyRule(ruleType string, pattern string, match string) (*compaction
 
 func generateTimeRangeRule(startTimestamp int64, stopTimestamp int64) compactionRule {
 	var params timeRangeRuleParams
-	params.StartTimestamp = uint64(startTimestamp)
-	params.StopTimestamp = uint64(stopTimestamp)
+	params.StartTimestamp = uint32(startTimestamp)
+	params.StopTimestamp = uint32(stopTimestamp)
 	paramsBytes, _ := json.Marshal(params)
 
 	return compactionRule{
