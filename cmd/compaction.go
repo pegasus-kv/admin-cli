@@ -27,9 +27,9 @@ func init() {
 			// sortkey filter
 			f.StringL("sortkey-pattern", "", "sort key pattern")
 			f.StringL("sortkey-match", "anywhere", "sort key's match type, for example: anywhere/prefix/postfix")
-			// expire time filter
-			f.Int64L("start-timestamp", -1, "expire time filter, start timestamp")
-			f.Int64L("stop-timestamp", -1, "expire time filter, stop timestamp")
+			// ttl filter
+			f.Int64L("start-ttl", -1, "ttl filter, start ttl")
+			f.Int64L("stop-ttl", -1, "ttl filter, stop ttl")
 		},
 		Run: shell.RequireUseTable(func(c *shell.Context) error {
 			return executor.SetCompaction(
@@ -42,8 +42,8 @@ func init() {
 				c.Flags.String("hashkey-match"),
 				c.Flags.String("sortkey-pattern"),
 				c.Flags.String("sortkey-match"),
-				c.Flags.Int64("start-timestamp"),
-				c.Flags.Int64("stop-timestamp"),
+				c.Flags.Int64("start-ttl"),
+				c.Flags.Int64("stop-ttl"),
 			)
 		}),
 	})

@@ -11,12 +11,12 @@ func SetCompaction(client *Client, tableName string,
 	operationType string, updateTTLType string, expireTimestamp uint,
 	hashkeyPattern string, hashkeyMatch string,
 	sortkeyPattern string, sortkeyMatch string,
-	startTimestamp int64, stopTimestamp int64) error {
+	startTTL int64, stopTTL int64) error {
 	json, err := generateCompactionEnv(client, tableName,
 		operationType, updateTTLType, expireTimestamp,
 		hashkeyPattern, hashkeyMatch,
 		sortkeyPattern, sortkeyMatch,
-		startTimestamp, stopTimestamp)
+		startTTL, stopTTL)
 	if err != nil {
 		return err
 	}
@@ -49,15 +49,15 @@ type keyRuleParams struct {
 	MatchType string `json:"match_type"`
 }
 type timeRangeRuleParams struct {
-	StartTimestamp uint32 `json:"start_timestamp"`
-	StopTimestamp  uint32 `json:"stop_timestamp"`
+	StartTTL uint32 `json:"start_ttl"`
+	StopTTL  uint32 `json:"stop_ttl"`
 }
 
 func generateCompactionEnv(client *Client, tableName string,
 	operationType string, updateTTLType string, expireTimestamp uint,
 	hashkeyPattern string, hashkeyMatch string,
 	sortkeyPattern string, sortkeyMatch string,
-	startTimestamp int64, stopTimestamp int64) (string, error) {
+	startTTL int64, stopTTL int64) (string, error) {
 	var err error
 	var operation = &compactionOperation{}
 	switch operationType {
@@ -72,7 +72,7 @@ func generateCompactionEnv(client *Client, tableName string,
 	}
 
 	if operation.Rules, err = generateRules(hashkeyPattern, hashkeyMatch,
-		sortkeyPattern, sortkeyMatch, startTimestamp, stopTimestamp); err != nil {
+		sortkeyPattern, sortkeyMatch, startTTL, stopTTL); err != nil {
 		return "", err
 	}
 	if len(operation.Rules) == 0 {
@@ -117,7 +117,7 @@ func generateUpdateTTLOperation(updateTTLType string, expireTimestamp uint) (*co
 
 func generateRules(hashkeyPattern string, hashkeyMatch string,
 	sortkeyPattern string, sortkeyMatch string,
-	startTimestamp int64, stopTimestamp int64) ([]compactionRule, error) {
+	startTTL int64, stopTTL int64) ([]compactionRule, error) {
 	var res []compactionRule
 	var err error
 	if hashkeyPattern != "" {
@@ -136,8 +136,8 @@ func generateRules(hashkeyPattern string, hashkeyMatch string,
 		res = append(res, *rule)
 	}
 
-	if startTimestamp >= 0 && stopTimestamp >= 0 {
-		res = append(res, generateTimeRangeRule(startTimestamp, stopTimestamp))
+	if startTTL >= 0 && stopTTL >= 0 {
+		res = append(res, generateTTLRangeRule(startTTL, stopTTL))
 	}
 	return res, nil
 }
@@ -164,14 +164,14 @@ func generateKeyRule(ruleType string, pattern string, match string) (*compaction
 	return rule, nil
 }
 
-func generateTimeRangeRule(startTimestamp int64, stopTimestamp int64) compactionRule {
+func generateTTLRangeRule(startTTL int64, stopTTL int64) compactionRule {
 	var params timeRangeRuleParams
-	params.StartTimestamp = uint32(startTimestamp)
-	params.StopTimestamp = uint32(stopTimestamp)
+	params.StartTTL = uint32(startTTL)
+	params.StopTTL = uint32(stopTTL)
 	paramsBytes, _ := json.Marshal(params)
 
 	return compactionRule{
-		RuleType: "FRT_EXPIRE_TIME_RANGE",
+		RuleType: "FRT_TTL_RANGE",
 		Params:   string(paramsBytes),
 	}
 }
