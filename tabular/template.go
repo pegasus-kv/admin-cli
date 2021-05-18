@@ -21,11 +21,11 @@ package tabular
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"io"
 	"strconv"
 
 	"github.com/dustin/go-humanize"
+	"gopkg.in/yaml.v2"
 )
 
 // Template receives a yaml template for printing the tabular contents.
