@@ -68,7 +68,7 @@ func DiskBalance(client *Client, replicaServer string) error {
 		return err
 	}
 
-	fmt.Printf("disk migrate: %v", migrateAction)
+	fmt.Printf("disk migrate: %v\n", migrateAction)
 	return nil
 }
 
