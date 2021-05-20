@@ -157,11 +157,11 @@ func getNextMigrateAction(client *Client, replicaServer string) (*MigrateAction,
 
 	lowDiskCanReceiveMax := migrateDisk.AverageUsage - migrateDisk.LowDisk.NodeCapacity.Usage
 	highDiskCanSendMax := migrateDisk.HighDisk.NodeCapacity.Usage - averageUsage
-	SizeToMove := math.Min(float64(lowDiskCanReceiveMax), float64(highDiskCanSendMax))
+	SizeToMove := int64(math.Min(float64(lowDiskCanReceiveMax), float64(highDiskCanSendMax)))
 
 	var selectReplica ReplicaCapacityStruct
 	for i := len(migrateDisk.HighDisk.ReplicaCapacity) - 1; i > 0; i++ {
-		if migrateDisk.HighDisk.ReplicaCapacity[i].Size > SizeToMove {
+		if int64(migrateDisk.HighDisk.ReplicaCapacity[i].Size) > SizeToMove {
 			continue
 		} else {
 			selectReplica = migrateDisk.HighDisk.ReplicaCapacity[i]
@@ -169,7 +169,7 @@ func getNextMigrateAction(client *Client, replicaServer string) (*MigrateAction,
 		}
 	}
 
-	fmt.Printf("disk migrate(sizeToMove=%fMB): node=%s, from=%s, to=%s, gpid(best)=%s(size=%f)\n",
+	fmt.Printf("disk migrate(sizeToMove=%dMB): node=%s, from=%s, to=%s, gpid(best)=%s(size=%dMB)\n",
 		SizeToMove, replicaServer,
 		migrateDisk.HighDisk.NodeCapacity.Disk,
 		migrateDisk.LowDisk.NodeCapacity.Disk,
