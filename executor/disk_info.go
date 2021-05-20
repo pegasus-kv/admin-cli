@@ -69,16 +69,16 @@ func QueryDiskInfo(client *Client, infoType DiskInfoType, replicaServer string, 
 }
 
 type NodeCapacityStruct struct {
-	Disk      string `json:"disk"`
-	Capacity  int64  `json:"capacity"`
-	Available int64  `json:"available"`
-	Ratio     int64  `json:"ratio"`
+	Disk     string `json:"disk"`
+	Capacity int64  `json:"capacity"`
+	Usage    int64  `json:"usage"`
+	Ratio    int64  `json:"ratio"`
 }
 
 type ReplicaCapacityStruct struct {
-	Replica  string  `json:"replica"`
-	Status   string  `json:"status"`
-	Capacity float64 `json:"capacity"`
+	Replica string  `json:"replica"`
+	Status  string  `json:"status"`
+	Size    float64 `json:"size"`
 }
 
 func queryDiskCapacity(client *Client, replicaServer string, resp *radmin.QueryDiskInfoResponse, diskTag string) []interface{} {
@@ -95,9 +95,9 @@ func queryDiskCapacity(client *Client, replicaServer string, resp *radmin.QueryD
 					for _, replica := range replicas {
 						var gpidStr = fmt.Sprintf("%d.%d", replica.Appid, replica.PartitionIndex)
 						replicaCapacityInfos = append(replicaCapacityInfos, ReplicaCapacityStruct{
-							Replica:  gpidStr,
-							Status:   replicaStatus,
-							Capacity: partitionStats[gpidStr],
+							Replica: gpidStr,
+							Status:  replicaStatus,
+							Size:    partitionStats[gpidStr],
 						})
 					}
 				}
@@ -111,10 +111,10 @@ func queryDiskCapacity(client *Client, replicaServer string, resp *radmin.QueryD
 		}
 
 		nodeCapacityInfos = append(nodeCapacityInfos, NodeCapacityStruct{
-			Disk:      diskInfo.Tag,
-			Capacity:  diskInfo.DiskCapacityMb,
-			Available: diskInfo.DiskAvailableMb,
-			Ratio:     diskInfo.DiskAvailableMb * 100.0 / diskInfo.DiskCapacityMb,
+			Disk:     diskInfo.Tag,
+			Capacity: diskInfo.DiskCapacityMb,
+			Usage:    diskInfo.DiskCapacityMb - diskInfo.DiskAvailableMb,
+			Ratio:    diskInfo.DiskCapacityMb - diskInfo.DiskAvailableMb * 100.0 / diskInfo.DiskCapacityMb,
 		})
 	}
 

@@ -83,13 +83,13 @@ func getCurrentDiskStats(client *Client, replicaServer string) (*DiskStats, erro
 	if err != nil {
 		return nil, err
 	}
-	util.SortStructsByField(diskCapacityOnNode, "Capacity")
+	util.SortStructsByField(diskCapacityOnNode, "Size")
 	var disks []NodeCapacityStruct
 	var totalUsage int64
 	for _, disk := range diskCapacityOnNode {
 		if s, ok := disk.(NodeCapacityStruct); ok {
 			disks = append(disks, s)
-			totalUsage += s.Capacity - s.Available
+			totalUsage += s.Capacity - s.Usage
 		} else {
 			return nil, fmt.Errorf("can't covert to NodeCapacityStruct")
 		}
@@ -114,8 +114,8 @@ func getCurrentDiskStats(client *Client, replicaServer string) (*DiskStats, erro
 		return nil, err
 	}
 
-	if highUsageDisk.Capacity - highUsageDisk.Available <= averageUsage ||
-		(highUsageDisk.Capacity - highUsageDisk.Available > averageUsage && (highUsageDisk.Capacity - highUsageDisk.Available - averageUsage)*100/averageUsage < 5) {
+	if highUsageDisk.Capacity - highUsageDisk.Usage <= averageUsage ||
+		(highUsageDisk.Capacity - highUsageDisk.Usage > averageUsage && (highUsageDisk.Capacity - highUsageDisk.Usage- averageUsage)*100/averageUsage < 5) {
 		return nil, fmt.Errorf("no need balance: high(%s): %dMB; low(%s): %dMB; average: %dMB(delta=%d%%)",
 			highUsageDisk.Disk, highUsageDisk.Capacity, lowUsageDisk.Disk, lowUsageDisk.Capacity, averageUsage,
 			(highUsageDisk.Capacity-averageUsage)*100/averageUsage)
@@ -140,7 +140,7 @@ func getCurrentDiskStats(client *Client, replicaServer string) (*DiskStats, erro
 }
 
 func convertReplicaCapacityStruct(replicaCapacityInfos []interface{}) ([]ReplicaCapacityStruct, error) {
-	util.SortStructsByField(replicaCapacityInfos, "Capacity")
+	util.SortStructsByField(replicaCapacityInfos, "Size")
 	var replicas []ReplicaCapacityStruct
 	for _, replica := range replicaCapacityInfos {
 		if r, ok := replica.(ReplicaCapacityStruct); ok {

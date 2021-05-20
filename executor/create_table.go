@@ -47,7 +47,7 @@ func CreateTable(c *Client, tableName string, partitionCount int, replicaCount i
 }
 
 func waitTableReady(c *Client, tableName string, partitionCount int, replicaCount int) error {
-	fmt.Fprintf(c, "Available partitions:\n")
+	fmt.Fprintf(c, "Usage partitions:\n")
 	bar := pb.Full.Start(partitionCount) // Add a new bar
 
 	for {
