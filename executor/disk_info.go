@@ -114,7 +114,7 @@ func queryDiskCapacity(client *Client, replicaServer string, resp *radmin.QueryD
 			Disk:     diskInfo.Tag,
 			Capacity: diskInfo.DiskCapacityMb,
 			Usage:    diskInfo.DiskCapacityMb - diskInfo.DiskAvailableMb,
-			Ratio:    diskInfo.DiskCapacityMb - diskInfo.DiskAvailableMb * 100.0 / diskInfo.DiskCapacityMb,
+			Ratio:    (diskInfo.DiskCapacityMb - diskInfo.DiskAvailableMb * 100.0) / diskInfo.DiskCapacityMb,
 		})
 	}
 

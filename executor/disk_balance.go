@@ -83,7 +83,7 @@ func getCurrentDiskStats(client *Client, replicaServer string) (*DiskStats, erro
 	if err != nil {
 		return nil, err
 	}
-	util.SortStructsByField(diskCapacityOnNode, "Size")
+	util.SortStructsByField(diskCapacityOnNode, "Usage")
 	var disks []NodeCapacityStruct
 	var totalUsage int64
 	for _, disk := range diskCapacityOnNode {
