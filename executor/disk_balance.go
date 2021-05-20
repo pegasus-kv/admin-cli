@@ -89,7 +89,7 @@ func getCurrentDiskStats(client *Client, replicaServer string) (*DiskStats, erro
 	for _, disk := range diskCapacityOnNode {
 		if s, ok := disk.(NodeCapacityStruct); ok {
 			disks = append(disks, s)
-			totalUsage += s.Capacity
+			totalUsage += s.Capacity - s.Available
 		} else {
 			return nil, fmt.Errorf("can't covert to NodeCapacityStruct")
 		}
@@ -114,8 +114,8 @@ func getCurrentDiskStats(client *Client, replicaServer string) (*DiskStats, erro
 		return nil, err
 	}
 
-	if highUsageDisk.Capacity < averageUsage ||
-		(highUsageDisk.Capacity > averageUsage && (highUsageDisk.Capacity-averageUsage)*100/averageUsage < 5) {
+	if highUsageDisk.Capacity - highUsageDisk.Available <= averageUsage ||
+		(highUsageDisk.Capacity - highUsageDisk.Available > averageUsage && (highUsageDisk.Capacity - highUsageDisk.Available - averageUsage)*100/averageUsage < 5) {
 		return nil, fmt.Errorf("no need balance: high(%s): %dMB; low(%s): %dMB; average: %dMB(delta=%d%%)",
 			highUsageDisk.Disk, highUsageDisk.Capacity, lowUsageDisk.Disk, lowUsageDisk.Capacity, averageUsage,
 			(highUsageDisk.Capacity-averageUsage)*100/averageUsage)
