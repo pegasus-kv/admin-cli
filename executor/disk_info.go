@@ -31,22 +31,22 @@ import (
 	"github.com/pegasus-kv/admin-cli/util"
 )
 
-type DiskInfoType int32
+type DiskInfoType string
 
 const (
-	CapacitySize DiskInfoType = 0
-	ReplicaCount DiskInfoType = 1
+	CapacitySize DiskInfoType = "CapacitySize"
+	ReplicaCount DiskInfoType = "ReplicaCount"
 )
 
 // QueryDiskInfo command
 // TODO(jiashuo1) need refactor
-func QueryDiskInfo(client *Client, infoType DiskInfoType, replicaServer string, tableName string, diskTag string) error {
+func QueryDiskInfo(client *Client, infoType DiskInfoType, replicaServer string, tableName string, diskTag string) ([]interface{}, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	n, err := client.Nodes.GetNode(replicaServer, session.NodeTypeReplica)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	replica := n.Replica()
 
@@ -55,35 +55,33 @@ func QueryDiskInfo(client *Client, infoType DiskInfoType, replicaServer string, 
 		AppName: tableName,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	switch infoType {
 	case CapacitySize:
-		queryDiskCapacity(client, n.TCPAddr(), resp, diskTag)
+		return queryDiskCapacity(client, n.TCPAddr(), resp, diskTag), nil
 	case ReplicaCount:
-		queryDiskReplicaCount(client, resp)
+		return queryDiskReplicaCount(client, resp), nil
 	default:
-		break
+		return nil, fmt.Errorf("not support query this disk info: %s", infoType)
 	}
-	return nil
 }
 
-func queryDiskCapacity(client *Client, replicaServer string, resp *radmin.QueryDiskInfoResponse, diskTag string) {
+type NodeCapacityStruct struct {
+	Disk      string `json:"disk"`
+	Capacity  int64  `json:"capacity"`
+	Available int64  `json:"available"`
+	Ratio     int64  `json:"ratio"`
+}
 
-	type nodeCapacityStruct struct {
-		Disk      string `json:"disk"`
-		Capacity  int64  `json:"capacity"`
-		Available int64  `json:"available"`
-		Ratio     int64  `json:"ratio"`
-	}
+type ReplicaCapacityStruct struct {
+	Replica  string  `json:"replica"`
+	Status   string  `json:"status"`
+	Capacity float64 `json:"capacity"`
+}
 
-	type replicaCapacityStruct struct {
-		Replica  string  `json:"replica"`
-		Status   string  `json:"status"`
-		Capacity float64 `json:"capacity"`
-	}
-
+func queryDiskCapacity(client *Client, replicaServer string, resp *radmin.QueryDiskInfoResponse, diskTag string) []interface{} {
 	var nodeCapacityInfos []interface{}
 	var replicaCapacityInfos []interface{}
 
@@ -96,7 +94,7 @@ func queryDiskCapacity(client *Client, replicaServer string, resp *radmin.QueryD
 				for _, replicas := range replicasWithAppId {
 					for _, replica := range replicas {
 						var gpidStr = fmt.Sprintf("%d.%d", replica.Appid, replica.PartitionIndex)
-						replicaCapacityInfos = append(replicaCapacityInfos, replicaCapacityStruct{
+						replicaCapacityInfos = append(replicaCapacityInfos, ReplicaCapacityStruct{
 							Replica:  gpidStr,
 							Status:   replicaStatus,
 							Capacity: partitionStats[gpidStr],
@@ -109,10 +107,10 @@ func queryDiskCapacity(client *Client, replicaServer string, resp *radmin.QueryD
 
 			// formats into tabularWriter
 			tabular.Print(client.Writer, replicaCapacityInfos)
-			return
+			return replicaCapacityInfos
 		}
 
-		nodeCapacityInfos = append(nodeCapacityInfos, nodeCapacityStruct{
+		nodeCapacityInfos = append(nodeCapacityInfos, NodeCapacityStruct{
 			Disk:      diskInfo.Tag,
 			Capacity:  diskInfo.DiskCapacityMb,
 			Available: diskInfo.DiskAvailableMb,
@@ -121,9 +119,10 @@ func queryDiskCapacity(client *Client, replicaServer string, resp *radmin.QueryD
 	}
 
 	tabular.Print(client.Writer, nodeCapacityInfos)
+	return nodeCapacityInfos
 }
 
-func queryDiskReplicaCount(client *Client, resp *radmin.QueryDiskInfoResponse) {
+func queryDiskReplicaCount(client *Client, resp *radmin.QueryDiskInfoResponse) []interface{} {
 	type ReplicaCountStruct struct {
 		Disk      string `json:"disk"`
 		Primary   int    `json:"primary"`
@@ -154,4 +153,5 @@ func queryDiskReplicaCount(client *Client, resp *radmin.QueryDiskInfoResponse) {
 	}
 
 	tabular.Print(client.Writer, replicaCountInfos)
+	return replicaCountInfos
 }

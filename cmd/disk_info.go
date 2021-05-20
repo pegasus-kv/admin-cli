@@ -37,12 +37,13 @@ func init() {
 			f.String("t", "table", "", "table name, for example, temp")
 		},
 		Run: func(c *grumble.Context) error {
-			return executor.QueryDiskInfo(
+			_, err := executor.QueryDiskInfo(
 				pegasusClient,
 				executor.CapacitySize,
 				c.Flags.String("node"),
 				c.Flags.String("table"),
 				c.Flags.String("disk"))
+			return err
 		},
 	})
 
@@ -55,12 +56,13 @@ func init() {
 			f.String("t", "table", "", "table name, for example, temp")
 		},
 		Run: func(c *grumble.Context) error {
-			return executor.QueryDiskInfo(
+			_, err := executor.QueryDiskInfo(
 				pegasusClient,
 				executor.ReplicaCount,
 				c.Flags.String("node"),
 				c.Flags.String("table"),
 				"")
+			return err
 		},
 	})
 }

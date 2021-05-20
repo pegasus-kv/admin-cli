@@ -52,10 +52,10 @@ func init() {
 		Name: "disk-balance",
 		Help: "auto-migrate replica to let the disks space balance within the given ReplicaServer",
 		Flags: func(f *grumble.Flags) {
-			/*define the flags*/
+			f.String("n", "node", "", "target node, for example, 127.0.0.1:34801")
 		},
 		Run: func(c *grumble.Context) error {
-			return executor.DiskBalance()
+			return executor.DiskBalance(pegasusClient, c.Flags.String("node"))
 		},
 	})
 

@@ -61,7 +61,106 @@ func DiskMigrate(client *Client, replicaServer string, pidStr string, from strin
 }
 
 // TODO(jiashuo1) need generate migrate strategy(step) depends the disk-info result to run
-func DiskBalance() error {
-	fmt.Println("Wait support")
-	return nil
+func DiskBalance(client *Client, replicaServer string) error {
+	diskStats, err := getCurrentDiskStats(client, replicaServer)
+	if err != nil {
+		return err
+	}
+	migratePlan, err := computeMigratePlan(diskStats)
+	if err != nil {
+		return err
+	}
+	return DiskMigrate(client, migratePlan.node, migratePlan.gpid, migratePlan.from, migratePlan.to)
+}
+
+type DiskStats struct {
+	High map[NodeCapacityStruct][]ReplicaCapacityStruct
+	Low  map[NodeCapacityStruct][]ReplicaCapacityStruct
+}
+
+func getCurrentDiskStats(client *Client, replicaServer string) (*DiskStats, error) {
+	diskCapacityOnNode, err := QueryDiskInfo(client, CapacitySize, replicaServer, "", "")
+	if err != nil {
+		return nil, err
+	}
+	util.SortStructsByField(diskCapacityOnNode, "Capacity")
+	var disks []NodeCapacityStruct
+	var totalUsage int64
+	for _, disk := range diskCapacityOnNode {
+		if s, ok := disk.(NodeCapacityStruct); ok {
+			disks = append(disks, s)
+			totalUsage += s.Capacity
+		} else {
+			return nil, fmt.Errorf("can't covert to NodeCapacityStruct")
+		}
+	}
+
+	if disks == nil {
+		return nil, fmt.Errorf("the node has no ssd")
+	}
+	if len(disks) == 1 {
+		return nil, fmt.Errorf("only has one disk, can't balance")
+	}
+	averageUsage := totalUsage / int64(len(disks))
+
+	highUsageDisk := disks[0]
+	lowUsageDisk := disks[len(disks)-1]
+	highDiskInfo, err := QueryDiskInfo(client, CapacitySize, replicaServer, "", highUsageDisk.Disk)
+	if err != nil {
+		return nil, err
+	}
+	lowDiskInfo, err := QueryDiskInfo(client, CapacitySize, replicaServer, "", lowUsageDisk.Disk)
+	if err != nil {
+		return nil, err
+	}
+
+	if highUsageDisk.Capacity < averageUsage ||
+		(highUsageDisk.Capacity > averageUsage && (highUsageDisk.Capacity-averageUsage)*100/averageUsage < 5) {
+		return nil, fmt.Errorf("no need balance: high(%s): %d; low(%s): %d; average: %d(delta=%d%%)",
+			highUsageDisk.Disk, highUsageDisk.Capacity, lowUsageDisk.Disk, lowUsageDisk.Capacity, averageUsage,
+			(highUsageDisk.Capacity-averageUsage)*100/averageUsage)
+	}
+
+	replicaCapacityOnHighDisk, err := convertReplicaCapacityStruct(highDiskInfo)
+	if err != nil {
+		return nil, err
+	}
+	replicaCapacityOnLowDisk, err := convertReplicaCapacityStruct(lowDiskInfo)
+	if err != nil {
+		return nil, err
+	}
+	diskStats := DiskStats{
+		High: make(map[NodeCapacityStruct][]ReplicaCapacityStruct),
+		Low:  make(map[NodeCapacityStruct][]ReplicaCapacityStruct),
+	}
+	diskStats.High[disks[0]] = replicaCapacityOnHighDisk
+	diskStats.Low[disks[len(disks)-1]] = replicaCapacityOnLowDisk
+	return &diskStats, nil
+}
+
+func convertReplicaCapacityStruct(replicaCapacityInfos []interface{}) ([]ReplicaCapacityStruct, error) {
+	util.SortStructsByField(replicaCapacityInfos, "Capacity")
+	var replicas []ReplicaCapacityStruct
+	for _, replica := range replicaCapacityInfos {
+		if r, ok := replica.(ReplicaCapacityStruct); ok {
+			replicas = append(replicas, r)
+		} else {
+			return nil, fmt.Errorf("can't covert to ReplicaCapacityStruct")
+		}
+	}
+	if replicas == nil {
+		return nil, fmt.Errorf("the ssd has no replica")
+	}
+	return replicas, nil
+}
+
+type MigratePlan struct {
+	node string
+	gpid string
+	from string
+	to   string
+}
+
+func computeMigratePlan(disk *DiskStats) (*MigratePlan, error) {
+	return nil, nil
 }
