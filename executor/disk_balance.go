@@ -175,6 +175,7 @@ func getNextMigrateAction(client *Client, replicaServer string) (*MigrateAction,
 		migrateDisk.LowDisk.NodeCapacity.Disk,
 		selectReplica.Replica,
 		int64(selectReplica.Size))
+
 	return &MigrateAction{
 		node: replicaServer,
 		gpid: selectReplica.Replica,
