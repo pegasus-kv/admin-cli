@@ -79,6 +79,8 @@ type DiskStats struct {
 }
 
 func getCurrentDiskStats(client *Client, replicaServer string) (*DiskStats, error) {
+
+	fmt.Println("[Node Capacity]")
 	diskCapacityOnNode, err := QueryDiskInfo(client, CapacitySize, replicaServer, "", "")
 	if err != nil {
 		return nil, err
@@ -104,11 +106,13 @@ func getCurrentDiskStats(client *Client, replicaServer string) (*DiskStats, erro
 	averageUsage := totalUsage / int64(len(disks))
 
 	highUsageDisk := disks[len(disks)-1]
+	fmt.Printf("[High Disk(%s)]\n", highUsageDisk.Disk)
 	highDiskInfo, err := QueryDiskInfo(client, CapacitySize, replicaServer, "", highUsageDisk.Disk)
 	if err != nil {
 		return nil, err
 	}
 	lowUsageDisk := disks[0]
+	fmt.Printf("[Low Disk(%s)]\n", lowUsageDisk.Disk)
 	lowDiskInfo, err := QueryDiskInfo(client, CapacitySize, replicaServer, "", lowUsageDisk.Disk)
 	if err != nil {
 		return nil, err
