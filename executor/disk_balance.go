@@ -103,13 +103,13 @@ func getCurrentDiskStats(client *Client, replicaServer string) (*DiskStats, erro
 	}
 	averageUsage := totalUsage / int64(len(disks))
 
-	highUsageDisk := disks[0]
-	lowUsageDisk := disks[len(disks)-1]
-	highDiskInfo, err := QueryDiskInfo(client, CapacitySize, replicaServer, "", highUsageDisk.Disk)
+	lowUsageDisk := disks[0]
+	highUsageDisk := disks[len(disks)-1]
+	lowDiskInfo, err := QueryDiskInfo(client, CapacitySize, replicaServer, "", lowUsageDisk.Disk)
 	if err != nil {
 		return nil, err
 	}
-	lowDiskInfo, err := QueryDiskInfo(client, CapacitySize, replicaServer, "", lowUsageDisk.Disk)
+	highDiskInfo, err := QueryDiskInfo(client, CapacitySize, replicaServer, "", highUsageDisk.Disk)
 	if err != nil {
 		return nil, err
 	}

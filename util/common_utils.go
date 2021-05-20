@@ -58,6 +58,8 @@ func SortStructsByField(structs []interface{}, key string) {
 			return strings.Compare(v1.String(), v2.String()) < 0
 		} else if v1.Type().Name() == "int" {
 			return v1.Int() < v2.Int()
+		} else if v1.Type().Name() == "int64"{
+			return v1.Int() < v2.Int()
 		} else {
 			panic(fmt.Sprintf("Not support sort %s", v1.Type().Name()))
 		}
