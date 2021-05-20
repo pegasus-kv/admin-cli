@@ -63,25 +63,22 @@ func DiskMigrate(client *Client, replicaServer string, pidStr string, from strin
 
 // TODO(jiashuo1) need generate migrate strategy(step) depends the disk-info result to run
 func DiskBalance(client *Client, replicaServer string) error {
-	migrateAction, err := getNextMigrateAction(client, replicaServer)
+	_, err := getNextMigrateAction(client, replicaServer)
 	if err != nil {
 		return err
 	}
-
-	fmt.Printf("disk migrate: %v\n", migrateAction)
 	return nil
 }
 
-
 type DiskStats struct {
-	NodeCapacity NodeCapacityStruct
+	NodeCapacity    NodeCapacityStruct
 	ReplicaCapacity []ReplicaCapacityStruct
 }
 
 type MigrateDisk struct {
 	AverageUsage int64
-	HighDisk DiskStats
-	LowDisk DiskStats
+	HighDisk     DiskStats
+	LowDisk      DiskStats
 }
 
 type MigrateAction struct {
@@ -149,11 +146,11 @@ func getNextMigrateAction(client *Client, replicaServer string) (*MigrateAction,
 	migrateDisk := MigrateDisk{
 		AverageUsage: averageUsage,
 		HighDisk: DiskStats{
-			NodeCapacity: highUsageDisk,
+			NodeCapacity:    highUsageDisk,
 			ReplicaCapacity: replicaCapacityOnHighDisk,
 		},
-		LowDisk:  DiskStats{
-			NodeCapacity: lowUsageDisk,
+		LowDisk: DiskStats{
+			NodeCapacity:    lowUsageDisk,
 			ReplicaCapacity: replicaCapacityOnLowDisk,
 		},
 	}
@@ -162,22 +159,28 @@ func getNextMigrateAction(client *Client, replicaServer string) (*MigrateAction,
 	highDiskCanSendMax := migrateDisk.HighDisk.NodeCapacity.Usage - averageUsage
 	SizeToMove := math.Min(float64(lowDiskCanReceiveMax), float64(highDiskCanSendMax))
 
-	var selectGpid string
+	var selectReplica ReplicaCapacityStruct
 	for i := len(migrateDisk.HighDisk.ReplicaCapacity) - 1; i > 0; i++ {
 		if migrateDisk.HighDisk.ReplicaCapacity[i].Size > SizeToMove {
 			continue
 		} else {
-			selectGpid = migrateDisk.HighDisk.ReplicaCapacity[i].Replica
+			selectReplica = migrateDisk.HighDisk.ReplicaCapacity[i]
 			break
 		}
 	}
 
+	fmt.Printf("disk migrate(sizeToMove=%fMB): node=%s, from=%s, to=%s, gpid(best)=%s(size=%f)\n",
+		SizeToMove, replicaServer,
+		migrateDisk.HighDisk.NodeCapacity.Disk,
+		migrateDisk.LowDisk.NodeCapacity.Disk,
+		selectReplica.Replica,
+		selectReplica.Size)
 	return &MigrateAction{
 		node: replicaServer,
-		gpid: selectGpid,
+		gpid: selectReplica.Replica,
 		from: highUsageDisk.Disk,
-		to: lowUsageDisk.Disk,
-	},nil
+		to:   lowUsageDisk.Disk,
+	}, nil
 }
 
 func convertReplicaCapacityStruct(replicaCapacityInfos []interface{}) ([]ReplicaCapacityStruct, error) {
@@ -196,6 +199,6 @@ func convertReplicaCapacityStruct(replicaCapacityInfos []interface{}) ([]Replica
 	return replicas, nil
 }
 
-func computeMigratePlan(disk *MigrateDisk) (*MigrateAction, error) {
+/*func computeMigratePlan(disk *MigrateDisk) (*MigrateAction, error) {
 	return &MigrateAction{"123", "123", "123", "123"}, nil
-}
+}*/
