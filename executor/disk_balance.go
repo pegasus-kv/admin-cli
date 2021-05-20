@@ -119,8 +119,8 @@ func getCurrentDiskStats(client *Client, replicaServer string) (*DiskStats, erro
 	if highUsageDisk.Capacity - highUsageDisk.Usage <= averageUsage ||
 		(highUsageDisk.Capacity - highUsageDisk.Usage > averageUsage && (highUsageDisk.Capacity - highUsageDisk.Usage- averageUsage)*100/averageUsage < 5) {
 		return nil, fmt.Errorf("no need balance: high(%s): %dMB; low(%s): %dMB; average: %dMB(delta=%d%%)",
-			highUsageDisk.Disk, highUsageDisk.Capacity, lowUsageDisk.Disk, lowUsageDisk.Capacity, averageUsage,
-			(highUsageDisk.Capacity-averageUsage)*100/averageUsage)
+			highUsageDisk.Disk, highUsageDisk.Usage, lowUsageDisk.Disk, lowUsageDisk.Usage, averageUsage,
+			(highUsageDisk.Usage-averageUsage)*100/averageUsage)
 	}
 
 	replicaCapacityOnHighDisk, err := convertReplicaCapacityStruct(highDiskInfo)
