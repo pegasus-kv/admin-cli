@@ -56,10 +56,10 @@ func SortStructsByField(structs []interface{}, key string) {
 		v2 := reflect.ValueOf(structs[j]).FieldByName(key)
 		if v1.Type().Name() == "string" {
 			return strings.Compare(v1.String(), v2.String()) < 0
-		} else if v1.Type().Name() == "int" ||
-			v1.Type().Name() == "int64" ||
-			v1.Type().Name() == "float64" {
+		} else if v1.Type().Name() == "int" || v1.Type().Name() == "int64" {
 			return v1.Int() < v2.Int()
+		} else if v1.Type().Name() == "float64" {
+			return v1.Float() < v2.Float()
 		} else {
 			panic(fmt.Sprintf("Not support sort %s", v1.Type().Name()))
 		}
