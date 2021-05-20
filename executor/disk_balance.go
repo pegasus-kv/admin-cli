@@ -116,7 +116,7 @@ func getCurrentDiskStats(client *Client, replicaServer string) (*DiskStats, erro
 
 	if highUsageDisk.Capacity < averageUsage ||
 		(highUsageDisk.Capacity > averageUsage && (highUsageDisk.Capacity-averageUsage)*100/averageUsage < 5) {
-		return nil, fmt.Errorf("no need balance: high(%s): %d; low(%s): %d; average: %d(delta=%d%%)",
+		return nil, fmt.Errorf("no need balance: high(%s): %dMB; low(%s): %dMB; average: %dMB(delta=%d%%)",
 			highUsageDisk.Disk, highUsageDisk.Capacity, lowUsageDisk.Disk, lowUsageDisk.Capacity, averageUsage,
 			(highUsageDisk.Capacity-averageUsage)*100/averageUsage)
 	}
@@ -162,5 +162,5 @@ type MigratePlan struct {
 }
 
 func computeMigratePlan(disk *DiskStats) (*MigratePlan, error) {
-	return nil, nil
+	return &MigratePlan{"123", "123", "123", "123"}, nil
 }
