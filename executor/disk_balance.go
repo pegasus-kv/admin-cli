@@ -103,7 +103,6 @@ func getCurrentDiskStats(client *Client, replicaServer string) (*DiskStats, erro
 	}
 	averageUsage := totalUsage / int64(len(disks))
 
-
 	highUsageDisk := disks[len(disks)-1]
 	highDiskInfo, err := QueryDiskInfo(client, CapacitySize, replicaServer, "", highUsageDisk.Disk)
 	if err != nil {
@@ -115,9 +114,8 @@ func getCurrentDiskStats(client *Client, replicaServer string) (*DiskStats, erro
 		return nil, err
 	}
 
-
-	if highUsageDisk.Capacity - highUsageDisk.Usage <= averageUsage ||
-		(highUsageDisk.Capacity - highUsageDisk.Usage > averageUsage && (highUsageDisk.Capacity - highUsageDisk.Usage- averageUsage)*100/averageUsage < 5) {
+	if highUsageDisk.Capacity-highUsageDisk.Usage <= averageUsage ||
+		(highUsageDisk.Capacity-highUsageDisk.Usage > averageUsage && (highUsageDisk.Capacity-highUsageDisk.Usage-averageUsage)*100/averageUsage < 5) {
 		return nil, fmt.Errorf("no need balance: high(%s): %dMB; low(%s): %dMB; average: %dMB(delta=%d%%)",
 			highUsageDisk.Disk, highUsageDisk.Usage, lowUsageDisk.Disk, lowUsageDisk.Usage, averageUsage,
 			(highUsageDisk.Usage-averageUsage)*100/averageUsage)
