@@ -89,7 +89,7 @@ func getCurrentDiskStats(client *Client, replicaServer string) (*DiskStats, erro
 	for _, disk := range diskCapacityOnNode {
 		if s, ok := disk.(NodeCapacityStruct); ok {
 			disks = append(disks, s)
-			totalUsage += s.Capacity - s.Usage
+			totalUsage += s.Usage
 		} else {
 			return nil, fmt.Errorf("can't covert to NodeCapacityStruct")
 		}
