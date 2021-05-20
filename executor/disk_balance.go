@@ -133,8 +133,9 @@ func getCurrentDiskStats(client *Client, replicaServer string) (*DiskStats, erro
 		High: make(map[NodeCapacityStruct][]ReplicaCapacityStruct),
 		Low:  make(map[NodeCapacityStruct][]ReplicaCapacityStruct),
 	}
-	diskStats.High[disks[0]] = replicaCapacityOnHighDisk
-	diskStats.Low[disks[len(disks)-1]] = replicaCapacityOnLowDisk
+	diskStats.High[highUsageDisk] = replicaCapacityOnHighDisk
+	diskStats.Low[lowUsageDisk] = replicaCapacityOnLowDisk
+	fmt.Printf("plan:%s->%s", highUsageDisk.Disk, lowUsageDisk.Disk)
 	return &diskStats, nil
 }
 
