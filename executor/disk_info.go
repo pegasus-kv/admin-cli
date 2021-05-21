@@ -76,9 +76,9 @@ type NodeCapacityStruct struct {
 }
 
 type ReplicaCapacityStruct struct {
-	Replica string  `json:"replica"`
-	Status  string  `json:"status"`
-	Size    float64 `json:"size"`
+	Replica string `json:"replica"`
+	Status  string `json:"status"`
+	Size    int64  `json:"size"`
 }
 
 func queryDiskCapacity(client *Client, replicaServer string, resp *radmin.QueryDiskInfoResponse, diskTag string) []interface{} {
@@ -97,7 +97,7 @@ func queryDiskCapacity(client *Client, replicaServer string, resp *radmin.QueryD
 						replicaCapacityInfos = append(replicaCapacityInfos, ReplicaCapacityStruct{
 							Replica: gpidStr,
 							Status:  replicaStatus,
-							Size:    partitionStats[gpidStr],
+							Size:    int64(partitionStats[gpidStr]),
 						})
 					}
 				}

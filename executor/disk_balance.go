@@ -61,7 +61,6 @@ func DiskMigrate(client *Client, replicaServer string, pidStr string, from strin
 	return nil
 }
 
-// TODO(jiashuo1) need generate migrate strategy(step) depends the disk-info result to run
 func DiskBalance(client *Client, replicaServer string) error {
 	_, err := getNextMigrateAction(client, replicaServer)
 	if err != nil {
@@ -77,6 +76,7 @@ type DiskStats struct {
 
 type MigrateDisk struct {
 	AverageUsage int64
+	currentNode  string
 	HighDisk     DiskStats
 	LowDisk      DiskStats
 }
@@ -89,11 +89,27 @@ type MigrateAction struct {
 }
 
 func getNextMigrateAction(client *Client, replicaServer string) (*MigrateAction, error) {
+	disks, averageUsage, err := queryDiskCapacityInfo(client, replicaServer)
+	if err != nil {
+		return nil, err
+	}
+	diskMigrateInfo, err := getMigrateDiskInfo(client, replicaServer, disks, averageUsage)
+	if err != nil {
+		return nil, err
+	}
 
+	migrateAction, err := computeMigrateAction(diskMigrateInfo)
+	if err != nil {
+		return nil, err
+	}
+	return migrateAction, nil
+}
+
+func queryDiskCapacityInfo(client *Client, replicaServer string) ([]NodeCapacityStruct, int64, error) {
 	fmt.Println("[Node Capacity]")
 	diskCapacityOnNode, err := QueryDiskInfo(client, CapacitySize, replicaServer, "", "")
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	util.SortStructsByField(diskCapacityOnNode, "Usage")
 	var disks []NodeCapacityStruct
@@ -103,18 +119,22 @@ func getNextMigrateAction(client *Client, replicaServer string) (*MigrateAction,
 			disks = append(disks, s)
 			totalUsage += s.Usage
 		} else {
-			return nil, fmt.Errorf("can't covert to NodeCapacityStruct")
+			return nil, 0, fmt.Errorf("can't covert to NodeCapacityStruct")
 		}
 	}
 
 	if disks == nil {
-		return nil, fmt.Errorf("the node has no ssd")
+		return nil, 0, fmt.Errorf("the node has no ssd")
 	}
 	if len(disks) == 1 {
-		return nil, fmt.Errorf("only has one disk, can't balance")
+		return nil, 0, fmt.Errorf("only has one disk, can't balance")
 	}
 	averageUsage := totalUsage / int64(len(disks))
 
+	return disks, averageUsage, nil
+}
+
+func getMigrateDiskInfo(client *Client, replicaServer string, disks []NodeCapacityStruct, averageUsage int64) (*MigrateDisk, error) {
 	highUsageDisk := disks[len(disks)-1]
 	fmt.Printf("[High Disk(%s)]\n", highUsageDisk.Disk)
 	highDiskInfo, err := QueryDiskInfo(client, CapacitySize, replicaServer, "", highUsageDisk.Disk)
@@ -128,10 +148,11 @@ func getNextMigrateAction(client *Client, replicaServer string) (*MigrateAction,
 		return nil, err
 	}
 
-	if highUsageDisk.Capacity-highUsageDisk.Usage <= averageUsage ||
-		(highUsageDisk.Capacity-highUsageDisk.Usage > averageUsage && (highUsageDisk.Capacity-highUsageDisk.Usage-averageUsage)*100/averageUsage < 5) {
-		return nil, fmt.Errorf("no need balance: high(%s): %dMB; low(%s): %dMB; average: %dMB(delta=%d%%)",
-			highUsageDisk.Disk, highUsageDisk.Usage, lowUsageDisk.Disk, lowUsageDisk.Usage, averageUsage,
+	if highUsageDisk.Capacity-highUsageDisk.Usage <= averageUsage || highUsageDisk.Ratio < 50 ||
+		(highUsageDisk.Capacity-highUsageDisk.Usage > averageUsage &&
+			(highUsageDisk.Capacity-highUsageDisk.Usage-averageUsage)*100/averageUsage < 5) {
+		return nil, fmt.Errorf("no need balance: high(%s): %dMB(%d%%); low(%s): %dMB(%d%%); average: %dMB(delta=%d%%)",
+			highUsageDisk.Disk, highUsageDisk.Usage, highUsageDisk.Ratio, lowUsageDisk.Disk, lowUsageDisk.Usage, lowUsageDisk.Ratio, averageUsage,
 			(highUsageDisk.Usage-averageUsage)*100/averageUsage)
 	}
 
@@ -143,8 +164,9 @@ func getNextMigrateAction(client *Client, replicaServer string) (*MigrateAction,
 	if err != nil {
 		return nil, err
 	}
-	migrateDisk := MigrateDisk{
+	return &MigrateDisk{
 		AverageUsage: averageUsage,
+		currentNode:  replicaServer,
 		HighDisk: DiskStats{
 			NodeCapacity:    highUsageDisk,
 			ReplicaCapacity: replicaCapacityOnHighDisk,
@@ -153,34 +175,45 @@ func getNextMigrateAction(client *Client, replicaServer string) (*MigrateAction,
 			NodeCapacity:    lowUsageDisk,
 			ReplicaCapacity: replicaCapacityOnLowDisk,
 		},
-	}
+	}, nil
+}
 
-	lowDiskCanReceiveMax := migrateDisk.AverageUsage - migrateDisk.LowDisk.NodeCapacity.Usage
-	highDiskCanSendMax := migrateDisk.HighDisk.NodeCapacity.Usage - averageUsage
-	SizeToMove := int64(math.Min(float64(lowDiskCanReceiveMax), float64(highDiskCanSendMax)))
+func computeMigrateAction(migrate *MigrateDisk) (*MigrateAction, error) {
+	lowDiskCanReceiveMax := migrate.AverageUsage - migrate.LowDisk.NodeCapacity.Usage
+	highDiskCanSendMax := migrate.HighDisk.NodeCapacity.Usage - migrate.AverageUsage
+	sizeToMove := int64(math.Min(float64(lowDiskCanReceiveMax), float64(highDiskCanSendMax)))
 
-	var selectReplica ReplicaCapacityStruct
-	for i := len(migrateDisk.HighDisk.ReplicaCapacity) - 1; i > 0; i++ {
-		if int64(migrateDisk.HighDisk.ReplicaCapacity[i].Size) > SizeToMove {
+	var selectReplica *ReplicaCapacityStruct
+	for i := len(migrate.HighDisk.ReplicaCapacity) - 1; i > 0; i++ {
+		if migrate.HighDisk.ReplicaCapacity[i].Size > sizeToMove {
 			continue
 		} else {
-			selectReplica = migrateDisk.HighDisk.ReplicaCapacity[i]
+			selectReplica = &migrate.HighDisk.ReplicaCapacity[i]
 			break
 		}
 	}
 
-	fmt.Printf("disk migrate(sizeToMove=%dMB): node=%s, from=%s, to=%s, gpid(best)=%s(size=%dMB)\n",
-		SizeToMove, replicaServer,
-		migrateDisk.HighDisk.NodeCapacity.Disk,
-		migrateDisk.LowDisk.NodeCapacity.Disk,
+	if selectReplica == nil {
+		return nil, fmt.Errorf("can't balance: sizeToMove=%dMB, but the min replica size is %dMB", sizeToMove, migrate.HighDisk.ReplicaCapacity[0].Size)
+	}
+
+	// if select replica size is too small, it will need migrate many replica and result in `replica count not balance` among disk
+	if selectReplica.Size < (10 << 10) {
+		return nil, fmt.Errorf("not suggest balance: the size is too small, size=%dMB", selectReplica.Size)
+	}
+
+	fmt.Printf("disk migrate(sizeToMove=%dMB): node=%s, from=%s, to=%s, gpid=%s(size=%dMB)\n",
+		sizeToMove, migrate.currentNode,
+		migrate.HighDisk.NodeCapacity.Disk,
+		migrate.LowDisk.NodeCapacity.Disk,
 		selectReplica.Replica,
-		int64(selectReplica.Size))
+		selectReplica.Size)
 
 	return &MigrateAction{
-		node: replicaServer,
+		node: migrate.currentNode,
 		gpid: selectReplica.Replica,
-		from: highUsageDisk.Disk,
-		to:   lowUsageDisk.Disk,
+		from: migrate.HighDisk.NodeCapacity.Disk,
+		to:   migrate.LowDisk.NodeCapacity.Disk,
 	}, nil
 }
 
@@ -199,7 +232,3 @@ func convertReplicaCapacityStruct(replicaCapacityInfos []interface{}) ([]Replica
 	}
 	return replicas, nil
 }
-
-/*func computeMigratePlan(disk *MigrateDisk) (*MigrateAction, error) {
-	return &MigrateAction{"123", "123", "123", "123"}, nil
-}*/
