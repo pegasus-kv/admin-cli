@@ -89,11 +89,11 @@ type MigrateAction struct {
 }
 
 func getNextMigrateAction(client *Client, replicaServer string) (*MigrateAction, error) {
-	disks, averageUsage, err := queryDiskCapacityInfo(client, replicaServer)
+	disks, totalUsage, totalCapacity, err := queryDiskCapacityInfo(client, replicaServer)
 	if err != nil {
 		return nil, err
 	}
-	diskMigrateInfo, err := getMigrateDiskInfo(client, replicaServer, disks, averageUsage)
+	diskMigrateInfo, err := getMigrateDiskInfo(client, replicaServer, disks, totalUsage, totalCapacity)
 	if err != nil {
 		return nil, err
 	}
@@ -105,36 +105,37 @@ func getNextMigrateAction(client *Client, replicaServer string) (*MigrateAction,
 	return migrateAction, nil
 }
 
-func queryDiskCapacityInfo(client *Client, replicaServer string) ([]NodeCapacityStruct, int64, error) {
+func queryDiskCapacityInfo(client *Client, replicaServer string) ([]NodeCapacityStruct, int64, int64, error) {
 	fmt.Println("[Node Capacity]")
 	diskCapacityOnNode, err := QueryDiskInfo(client, CapacitySize, replicaServer, "", "")
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, 0, err
 	}
 	util.SortStructsByField(diskCapacityOnNode, "Usage")
 	var disks []NodeCapacityStruct
 	var totalUsage int64
+	var totalCapacity int64
 	for _, disk := range diskCapacityOnNode {
 		if s, ok := disk.(NodeCapacityStruct); ok {
 			disks = append(disks, s)
 			totalUsage += s.Usage
+			totalCapacity += s.Capacity
 		} else {
-			return nil, 0, fmt.Errorf("can't covert to NodeCapacityStruct")
+			return nil, 0, 0, fmt.Errorf("can't covert to NodeCapacityStruct")
 		}
 	}
 
 	if disks == nil {
-		return nil, 0, fmt.Errorf("the node has no ssd")
+		return nil, 0, 0, fmt.Errorf("the node has no ssd")
 	}
 	if len(disks) == 1 {
-		return nil, 0, fmt.Errorf("only has one disk, can't balance")
+		return nil, 0, 0, fmt.Errorf("only has one disk, can't balance")
 	}
-	averageUsage := totalUsage / int64(len(disks))
 
-	return disks, averageUsage, nil
+	return disks, totalUsage, totalCapacity, nil
 }
 
-func getMigrateDiskInfo(client *Client, replicaServer string, disks []NodeCapacityStruct, averageUsage int64) (*MigrateDisk, error) {
+func getMigrateDiskInfo(client *Client, replicaServer string, disks []NodeCapacityStruct, totalUsage int64, totalCapacity int64) (*MigrateDisk, error) {
 	highUsageDisk := disks[len(disks)-1]
 	fmt.Printf("[High Disk(%s)]\n", highUsageDisk.Disk)
 	highDiskInfo, err := QueryDiskInfo(client, CapacitySize, replicaServer, "", highUsageDisk.Disk)
@@ -148,12 +149,17 @@ func getMigrateDiskInfo(client *Client, replicaServer string, disks []NodeCapaci
 		return nil, err
 	}
 
-	if highUsageDisk.Capacity-highUsageDisk.Usage <= averageUsage || highUsageDisk.Ratio < 50 ||
-		(highUsageDisk.Capacity-highUsageDisk.Usage > averageUsage &&
-			(highUsageDisk.Capacity-highUsageDisk.Usage-averageUsage)*100/averageUsage < 5) {
-		return nil, fmt.Errorf("no need balance: high(%s): %dMB(%d%%); low(%s): %dMB(%d%%); average: %dMB(delta=%d%%)",
-			highUsageDisk.Disk, highUsageDisk.Usage, highUsageDisk.Ratio, lowUsageDisk.Disk, lowUsageDisk.Usage, lowUsageDisk.Ratio, averageUsage,
-			(highUsageDisk.Usage-averageUsage)*100/averageUsage)
+	if highUsageDisk.Ratio < 50 {
+		return nil, fmt.Errorf("no need balance for the high disk still enough capacity(balance threshold=50%%): high(%s): %dMB(%d%%); low(%s): %dMB(%d%%)",
+			highUsageDisk.Disk, highUsageDisk.Usage, highUsageDisk.Ratio, lowUsageDisk.Disk, lowUsageDisk.Usage, lowUsageDisk.Ratio)
+	}
+
+	averageUsage := totalUsage / int64(len(disks))
+	averageRatio := totalUsage * 100 / totalCapacity
+	if highUsageDisk.Ratio-averageRatio < 5 {
+		return nil, fmt.Errorf("no need balance for the disk is balanced: high(%s): %dMB(%d%%); low(%s): %dMB(%d%%); average: %dMB(%d%%), balance delta=%d%%)",
+			highUsageDisk.Disk, highUsageDisk.Usage, highUsageDisk.Ratio, lowUsageDisk.Disk, lowUsageDisk.Usage, lowUsageDisk.Ratio, averageUsage, totalUsage*100/totalCapacity,
+			highUsageDisk.Ratio-averageRatio)
 	}
 
 	replicaCapacityOnHighDisk, err := convertReplicaCapacityStruct(highDiskInfo)
