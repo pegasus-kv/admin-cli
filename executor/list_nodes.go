@@ -34,7 +34,7 @@ import (
 type nodeInfoStruct struct {
 	Address           string `json:"Node"`
 	Status            string `json:"Status"`
-	ReplicaTotalCount int    `json:"Gpid"`
+	ReplicaTotalCount int    `json:"Replica"`
 	PrimaryCount      int    `json:"Primary"`
 	SecondaryCount    int    `json:"Secondary"`
 }
