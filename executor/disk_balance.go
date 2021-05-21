@@ -107,7 +107,7 @@ func getNextMigrateAction(client *Client, replicaServer string) (*MigrateAction,
 
 func queryDiskCapacityInfo(client *Client, replicaServer string) ([]NodeCapacityStruct, int64, int64, error) {
 	fmt.Println("[Node Capacity]")
-	diskCapacityOnNode, err := QueryDiskInfo(client, CapacitySize, replicaServer, "", "")
+	diskCapacityOnNode, err := queryDiskInfo(client, CapacitySize, replicaServer, "", "", false)
 	if err != nil {
 		return nil, 0, 0, err
 	}
@@ -137,14 +137,12 @@ func queryDiskCapacityInfo(client *Client, replicaServer string) ([]NodeCapacity
 
 func getMigrateDiskInfo(client *Client, replicaServer string, disks []NodeCapacityStruct, totalUsage int64, totalCapacity int64) (*MigrateDisk, error) {
 	highUsageDisk := disks[len(disks)-1]
-	fmt.Printf("[High Disk(%s)]\n", highUsageDisk.Disk)
-	highDiskInfo, err := QueryDiskInfo(client, CapacitySize, replicaServer, "", highUsageDisk.Disk)
+	highDiskInfo, err := queryDiskInfo(client, CapacitySize, replicaServer, "", highUsageDisk.Disk, false)
 	if err != nil {
 		return nil, err
 	}
 	lowUsageDisk := disks[0]
-	fmt.Printf("[Low Disk(%s)]\n", lowUsageDisk.Disk)
-	lowDiskInfo, err := QueryDiskInfo(client, CapacitySize, replicaServer, "", lowUsageDisk.Disk)
+	lowDiskInfo, err := queryDiskInfo(client, CapacitySize, replicaServer, "", lowUsageDisk.Disk, false)
 	if err != nil {
 		return nil, err
 	}

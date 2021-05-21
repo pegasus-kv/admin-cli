@@ -39,7 +39,15 @@ const (
 )
 
 // QueryDiskInfo command
-func QueryDiskInfo(client *Client, infoType DiskInfoType, replicaServer string, tableName string, diskTag string) ([]interface{}, error) {
+func QueryDiskInfo(client *Client, infoType DiskInfoType, replicaServer string, tableName string, diskTag string) error {
+	_, err := queryDiskInfo(client, infoType, replicaServer, tableName, diskTag, true)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func queryDiskInfo(client *Client, infoType DiskInfoType, replicaServer string, tableName string, diskTag string, print bool) ([]interface{}, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
@@ -59,9 +67,9 @@ func QueryDiskInfo(client *Client, infoType DiskInfoType, replicaServer string, 
 
 	switch infoType {
 	case CapacitySize:
-		return queryDiskCapacity(client, n.TCPAddr(), resp, diskTag), nil
+		return queryDiskCapacity(client, n.TCPAddr(), resp, diskTag, print), nil
 	case ReplicaCount:
-		return queryDiskReplicaCount(client, resp), nil
+		return queryDiskReplicaCount(client, resp, print), nil
 	default:
 		return nil, fmt.Errorf("not support query this disk info: %s", infoType)
 	}
@@ -80,7 +88,7 @@ type ReplicaCapacityStruct struct {
 	Size    int64  `json:"size"`
 }
 
-func queryDiskCapacity(client *Client, replicaServer string, resp *radmin.QueryDiskInfoResponse, diskTag string) []interface{} {
+func queryDiskCapacity(client *Client, replicaServer string, resp *radmin.QueryDiskInfoResponse, diskTag string, print bool) []interface{} {
 	var nodeCapacityInfos []interface{}
 	var replicaCapacityInfos []interface{}
 
@@ -105,7 +113,9 @@ func queryDiskCapacity(client *Client, replicaServer string, resp *radmin.QueryD
 			appendCapacity(diskInfo.HoldingSecondaryReplicas, "secondary")
 
 			// formats into tabularWriter
-			tabular.Print(client.Writer, replicaCapacityInfos)
+			if print {
+				tabular.Print(client.Writer, replicaCapacityInfos)
+			}
 			return replicaCapacityInfos
 		}
 
@@ -117,11 +127,13 @@ func queryDiskCapacity(client *Client, replicaServer string, resp *radmin.QueryD
 		})
 	}
 
-	tabular.Print(client.Writer, nodeCapacityInfos)
+	if print {
+		tabular.Print(client.Writer, nodeCapacityInfos)
+	}
 	return nodeCapacityInfos
 }
 
-func queryDiskReplicaCount(client *Client, resp *radmin.QueryDiskInfoResponse) []interface{} {
+func queryDiskReplicaCount(client *Client, resp *radmin.QueryDiskInfoResponse, print bool) []interface{} {
 	type ReplicaCountStruct struct {
 		Disk      string `json:"disk"`
 		Primary   int    `json:"primary"`
@@ -151,6 +163,8 @@ func queryDiskReplicaCount(client *Client, resp *radmin.QueryDiskInfoResponse) [
 		})
 	}
 
-	tabular.Print(client.Writer, replicaCountInfos)
+	if print {
+		tabular.Print(client.Writer, replicaCountInfos)
+	}
 	return replicaCountInfos
 }
