@@ -65,6 +65,10 @@ func DiskMigrate(client *Client, replicaServer string, pidStr string, from strin
 }
 
 func DiskBalance(client *Client, replicaServer string, auto bool) error {
+	err := changeDiskCleanerInterval(client, replicaServer, 10, 1)
+	if err != nil {
+		return err
+	}
 	for {
 		action, err := getNextMigrateAction(client, replicaServer)
 		if err != nil {
@@ -86,10 +90,15 @@ func DiskBalance(client *Client, replicaServer string, auto bool) error {
 			continue
 		}
 		fmt.Printf("migrate(%s from %s to %s) is completed", action.replica.Gpid, action.from, action.to)
-		if !auto {
-			break
+		if auto {
+			time.Sleep(time.Second * 60)
+			continue
 		}
-		time.Sleep(time.Second * 30)
+		break
+	}
+	err = changeDiskCleanerInterval(client, replicaServer, 600, 86400)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -111,6 +120,15 @@ type MigrateAction struct {
 	replica ReplicaCapacityStruct
 	from    string
 	to      string
+}
+
+func changeDiskCleanerInterval(client *Client, replicaServer string, updateInterval int64, cleanInterval int64) error {
+	// todo(disk stat update interval need support in ConfigCommand)
+	err := ConfigCommand(client, session.NodeTypeReplica, replicaServer, "gc_disk_migration_tmp_replica_interval_seconds", "set", cleanInterval)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func getNextMigrateAction(client *Client, replicaServer string) (*MigrateAction, error) {
