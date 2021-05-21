@@ -62,11 +62,11 @@ func DiskMigrate(client *Client, replicaServer string, pidStr string, from strin
 }
 
 func DiskBalance(client *Client, replicaServer string) error {
-	_, err := getNextMigrateAction(client, replicaServer)
+	action, err := getNextMigrateAction(client, replicaServer)
 	if err != nil {
 		return err
 	}
-	return nil
+	return DiskMigrate(client, replicaServer, action.gpid, action.from, action.to)
 }
 
 type DiskStats struct {

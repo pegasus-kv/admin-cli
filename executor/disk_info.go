@@ -39,7 +39,6 @@ const (
 )
 
 // QueryDiskInfo command
-// TODO(jiashuo1) need refactor
 func QueryDiskInfo(client *Client, infoType DiskInfoType, replicaServer string, tableName string, diskTag string) ([]interface{}, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
