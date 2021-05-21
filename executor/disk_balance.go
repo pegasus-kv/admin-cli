@@ -23,6 +23,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/XiaoMi/pegasus-go-client/idl/admin"
@@ -78,15 +79,18 @@ func DiskBalance(client *Client, replicaServer string, auto bool) error {
 			continue
 		}
 		err = DiskMigrate(client, replicaServer, action.replica.Gpid, action.from, action.to)
-		if err != nil {
-			return err
+		if err == nil || strings.Contains(err.Error(), "ERR_BUSY") {
+			fmt.Printf("migrate(%s from %s to %s) is running, msg=%s, try again",
+				action.replica.Gpid, action.from, action.to, err)
+			time.Sleep(time.Second * 30)
+			continue
 		}
+		fmt.Printf("migrate(%s from %s to %s) is completed", action.replica.Gpid, action.from, action.to)
 		if !auto {
 			break
 		}
 		time.Sleep(time.Second * 30)
 	}
-	fmt.Printf("balance succeed!")
 	return nil
 }
 
