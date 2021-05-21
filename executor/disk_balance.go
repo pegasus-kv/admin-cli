@@ -61,12 +61,23 @@ func DiskMigrate(client *Client, replicaServer string, pidStr string, from strin
 	return nil
 }
 
-func DiskBalance(client *Client, replicaServer string) error {
-	action, err := getNextMigrateAction(client, replicaServer)
-	if err != nil {
-		return err
+func DiskBalance(client *Client, replicaServer string, auto bool) error {
+	for {
+		action, err := getNextMigrateAction(client, replicaServer)
+		if err != nil {
+			return err
+		}
+		err = DiskMigrate(client, replicaServer, action.gpid, action.from, action.to)
+		if err != nil {
+			return err
+		}
+		if !auto {
+			break
+		}
+		time.Sleep(time.Second * 10)
 	}
-	return DiskMigrate(client, replicaServer, action.gpid, action.from, action.to)
+	fmt.Printf("balance succeed!")
+	return nil
 }
 
 type DiskStats struct {
@@ -106,7 +117,6 @@ func getNextMigrateAction(client *Client, replicaServer string) (*MigrateAction,
 }
 
 func queryDiskCapacityInfo(client *Client, replicaServer string) ([]NodeCapacityStruct, int64, int64, error) {
-	fmt.Println("[Node Capacity]")
 	diskCapacityOnNode, err := queryDiskInfo(client, CapacitySize, replicaServer, "", "", false)
 	if err != nil {
 		return nil, 0, 0, err
