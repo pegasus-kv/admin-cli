@@ -74,7 +74,7 @@ func DiskBalance(client *Client, replicaServer string, auto bool) error {
 			if err != nil {
 				return err
 			}
-			time.Sleep(time.Second * 5)
+			time.Sleep(time.Second * 10)
 			continue
 		}
 		err = DiskMigrate(client, replicaServer, action.replica.Gpid, action.from, action.to)
@@ -84,7 +84,7 @@ func DiskBalance(client *Client, replicaServer string, auto bool) error {
 		if !auto {
 			break
 		}
-		time.Sleep(time.Second * 10)
+		time.Sleep(time.Second * 30)
 	}
 	fmt.Printf("balance succeed!")
 	return nil
@@ -127,7 +127,7 @@ func getNextMigrateAction(client *Client, replicaServer string) (*MigrateAction,
 }
 
 func forceAssignReplicaToSecondary(client *Client, replicaServer string, gpid string) error {
-	fmt.Printf("WARNING: the select replica is not secondary, will force assign it secondary")
+	fmt.Printf("WARNING: the select replica is not secondary, will force assign it secondary\n")
 	_, err := client.Meta.MetaControl(admin.MetaFunctionLevel_fl_steady)
 	if err != nil {
 		return err
@@ -292,10 +292,11 @@ func computeMigrateAction(migrate *MigrateDisk) (*MigrateAction, error) {
 			selectReplica.Gpid, selectReplica.Size, sizeToMove)
 	}
 
-	fmt.Printf("disk migrate(sizeToMove=%dMB): node=%s, from=%s, to=%s, gpid=%s(size=%dMB)\n",
+	fmt.Printf("disk migrate(sizeToMove=%dMB): node=%s, from=%s, to=%s, gpid(%s)=%s(size=%dMB)\n",
 		sizeToMove, migrate.currentNode,
 		migrate.HighDisk.NodeCapacity.Disk,
 		migrate.LowDisk.NodeCapacity.Disk,
+		selectReplica.Status,
 		selectReplica.Gpid,
 		selectReplica.Size)
 
