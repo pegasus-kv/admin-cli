@@ -144,46 +144,6 @@ func forceAssignReplicaToSecondary(client *Client, replicaServer string, gpid st
 	return nil
 }
 
-func computeMigrateAction(migrate *MigrateDisk) (*MigrateAction, error) {
-	lowDiskCanReceiveMax := migrate.AverageUsage - migrate.LowDisk.NodeCapacity.Usage
-	highDiskCanSendMax := migrate.HighDisk.NodeCapacity.Usage - migrate.AverageUsage
-	sizeToMove := int64(math.Min(float64(lowDiskCanReceiveMax), float64(highDiskCanSendMax)))
-
-	var selectReplica *ReplicaCapacityStruct
-	for i := len(migrate.HighDisk.ReplicaCapacity) - 1; i > 0; i++ {
-		if migrate.HighDisk.ReplicaCapacity[i].Size > sizeToMove {
-			continue
-		} else {
-			selectReplica = &migrate.HighDisk.ReplicaCapacity[i]
-			break
-		}
-	}
-
-	if selectReplica == nil {
-		return nil, fmt.Errorf("can't balance: sizeToMove=%dMB, but the min replica size is %dMB",
-			sizeToMove, migrate.HighDisk.ReplicaCapacity[0].Size)
-	}
-
-	// if select replica size is too small, it will need migrate many replica and result in `replica count not balance` among disk
-	if selectReplica.Size < (10 << 10) {
-		return nil, fmt.Errorf("not suggest balance: the size is too small, size=%dMB", selectReplica.Size)
-	}
-
-	fmt.Printf("disk migrate(sizeToMove=%dMB): node=%s, from=%s, to=%s, gpid=%s(size=%dMB)\n",
-		sizeToMove, migrate.currentNode,
-		migrate.HighDisk.NodeCapacity.Disk,
-		migrate.LowDisk.NodeCapacity.Disk,
-		selectReplica.Gpid,
-		selectReplica.Size)
-
-	return &MigrateAction{
-		node:    migrate.currentNode,
-		replica: *selectReplica,
-		from:    migrate.HighDisk.NodeCapacity.Disk,
-		to:      migrate.LowDisk.NodeCapacity.Disk,
-	}, nil
-}
-
 func getReplicaSecondaryNode(client *Client, gpid string) (*util.PegasusNode, error) {
 	replica, err := util.Str2Gpid(gpid)
 	if err != nil {
@@ -299,6 +259,46 @@ func getMigrateDiskInfo(client *Client, replicaServer string, disks []NodeCapaci
 			NodeCapacity:    lowUsageDisk,
 			ReplicaCapacity: replicaCapacityOnLowDisk,
 		},
+	}, nil
+}
+
+func computeMigrateAction(migrate *MigrateDisk) (*MigrateAction, error) {
+	lowDiskCanReceiveMax := migrate.AverageUsage - migrate.LowDisk.NodeCapacity.Usage
+	highDiskCanSendMax := migrate.HighDisk.NodeCapacity.Usage - migrate.AverageUsage
+	sizeToMove := int64(math.Min(float64(lowDiskCanReceiveMax), float64(highDiskCanSendMax)))
+
+	var selectReplica *ReplicaCapacityStruct
+	for i := len(migrate.HighDisk.ReplicaCapacity) - 1; i > 0; i++ {
+		if migrate.HighDisk.ReplicaCapacity[i].Size > sizeToMove {
+			continue
+		} else {
+			selectReplica = &migrate.HighDisk.ReplicaCapacity[i]
+			break
+		}
+	}
+
+	if selectReplica == nil {
+		return nil, fmt.Errorf("can't balance: sizeToMove=%dMB, but the min replica size is %dMB",
+			sizeToMove, migrate.HighDisk.ReplicaCapacity[0].Size)
+	}
+
+	// if select replica size is too small, it will need migrate many replica and result in `replica count not balance` among disk
+	if selectReplica.Size < (10 << 10) {
+		return nil, fmt.Errorf("not suggest balance: the size is too small, size=%dMB", selectReplica.Size)
+	}
+
+	fmt.Printf("disk migrate(sizeToMove=%dMB): node=%s, from=%s, to=%s, gpid=%s(size=%dMB)\n",
+		sizeToMove, migrate.currentNode,
+		migrate.HighDisk.NodeCapacity.Disk,
+		migrate.LowDisk.NodeCapacity.Disk,
+		selectReplica.Gpid,
+		selectReplica.Size)
+
+	return &MigrateAction{
+		node:    migrate.currentNode,
+		replica: *selectReplica,
+		from:    migrate.HighDisk.NodeCapacity.Disk,
+		to:      migrate.LowDisk.NodeCapacity.Disk,
 	}, nil
 }
 
