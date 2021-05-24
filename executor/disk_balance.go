@@ -93,11 +93,6 @@ func DiskBalance(client *Client, replicaServer string, auto bool) error {
 		if err == nil {
 			fmt.Printf("migrate(%s from %s to %s) has started, wait complete...\n",
 				action.replica.Gpid, action.from, action.to)
-			time.Sleep(time.Second * 90)
-			continue
-		}
-		if strings.Contains(err.Error(), "ERR_BUSY") {
-			time.Sleep(time.Second * 10)
 			for {
 				// TODO(jiashuo1): using DiskMigrate RPC to query status, consider support queryDiskMigrateStatus RPC
 				err = DiskMigrate(client, replicaServer, action.replica.Gpid, action.from, action.to)
@@ -116,6 +111,8 @@ func DiskBalance(client *Client, replicaServer string, auto bool) error {
 					action.replica.Gpid, action.from, action.to, err.Error())
 				break
 			}
+			time.Sleep(time.Second * 90)
+			continue
 		}
 		if auto {
 			time.Sleep(time.Second * 90)
