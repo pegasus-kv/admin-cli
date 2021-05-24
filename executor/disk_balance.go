@@ -255,10 +255,10 @@ func queryDiskCapacityInfo(client *Client, replicaServer string) ([]DiskCapacity
 	}
 
 	if disks == nil {
-		return nil, 0, 0, fmt.Errorf("the node has no ssd")
+		return nil, 0, 0, fmt.Errorf("the node(%s) has no ssd", replicaServer)
 	}
 	if len(disks) == 1 {
-		return nil, 0, 0, fmt.Errorf("only has one disk, can't balance")
+		return nil, 0, 0, fmt.Errorf("the node(%s) only has one disk, can't balance", replicaServer)
 	}
 
 	return disks, totalUsage, totalCapacity, nil
@@ -292,11 +292,11 @@ func getMigrateDiskInfo(client *Client, replicaServer string, disks []DiskCapaci
 			lowUsageDisk.Usage, lowUsageDisk.Ratio, averageUsage, averageRatio)
 	}
 
-	replicaCapacityOnHighDisk, err := convertReplicaCapacityStruct(highDiskInfo)
+	replicaCapacityOnHighDisk, err := convertReplicaCapacityStruct(highUsageDisk.Disk, highDiskInfo)
 	if err != nil {
 		return nil, err
 	}
-	replicaCapacityOnLowDisk, err := convertReplicaCapacityStruct(lowDiskInfo)
+	replicaCapacityOnLowDisk, err := convertReplicaCapacityStruct(lowUsageDisk.Disk, lowDiskInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -354,7 +354,7 @@ func computeMigrateAction(migrate *MigrateDisk, minSize int64) (*MigrateAction, 
 	}, nil
 }
 
-func convertReplicaCapacityStruct(replicaCapacityInfos []interface{}) ([]ReplicaCapacityStruct, error) {
+func convertReplicaCapacityStruct(disk string, replicaCapacityInfos []interface{}) ([]ReplicaCapacityStruct, error) {
 	util.SortStructsByField(replicaCapacityInfos, "Size")
 	var replicas []ReplicaCapacityStruct
 	for _, replica := range replicaCapacityInfos {
@@ -365,7 +365,7 @@ func convertReplicaCapacityStruct(replicaCapacityInfos []interface{}) ([]Replica
 		}
 	}
 	if replicas == nil {
-		return nil, fmt.Errorf("the ssd has no replica")
+		return nil, fmt.Errorf("the disk(%s) has no replica", disk)
 	}
 	return replicas, nil
 }
