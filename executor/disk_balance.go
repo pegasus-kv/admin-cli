@@ -95,7 +95,7 @@ func DiskBalance(client *Client, replicaServer string, auto bool) error {
 			time.Sleep(time.Second * 90)
 			continue
 		}
-		fmt.Printf("migrate(%s from %s to %s) is completed", action.replica.Gpid, action.from, action.to)
+		fmt.Printf("migrate(%s from %s to %s) is completed， result=%s", action.replica.Gpid, action.from, action.to, err.Error())
 		if auto {
 			time.Sleep(time.Second * 90)
 			continue
