@@ -110,7 +110,7 @@ func DiskBalance(client *Client, replicaServer string, auto bool) error {
 }
 
 type DiskStats struct {
-	NodeCapacity    NodeCapacityStruct
+	NodeCapacity    DiskCapacityStruct
 	ReplicaCapacity []ReplicaCapacityStruct
 }
 
@@ -213,22 +213,22 @@ func getReplicaSecondaryNode(client *Client, gpid string) (*util.PegasusNode, er
 	return secondaryNode, nil
 }
 
-func queryDiskCapacityInfo(client *Client, replicaServer string) ([]NodeCapacityStruct, int64, int64, error) {
+func queryDiskCapacityInfo(client *Client, replicaServer string) ([]DiskCapacityStruct, int64, int64, error) {
 	diskCapacityOnNode, err := queryDiskInfo(client, CapacitySize, replicaServer, "", "", false)
 	if err != nil {
 		return nil, 0, 0, err
 	}
 	util.SortStructsByField(diskCapacityOnNode, "Usage")
-	var disks []NodeCapacityStruct
+	var disks []DiskCapacityStruct
 	var totalUsage int64
 	var totalCapacity int64
 	for _, disk := range diskCapacityOnNode {
-		if s, ok := disk.(NodeCapacityStruct); ok {
+		if s, ok := disk.(DiskCapacityStruct); ok {
 			disks = append(disks, s)
 			totalUsage += s.Usage
 			totalCapacity += s.Capacity
 		} else {
-			return nil, 0, 0, fmt.Errorf("can't covert to NodeCapacityStruct")
+			return nil, 0, 0, fmt.Errorf("can't covert to DiskCapacityStruct")
 		}
 	}
 
@@ -242,7 +242,7 @@ func queryDiskCapacityInfo(client *Client, replicaServer string) ([]NodeCapacity
 	return disks, totalUsage, totalCapacity, nil
 }
 
-func getMigrateDiskInfo(client *Client, replicaServer string, disks []NodeCapacityStruct,
+func getMigrateDiskInfo(client *Client, replicaServer string, disks []DiskCapacityStruct,
 	totalUsage int64, totalCapacity int64) (*MigrateDisk, error) {
 	highUsageDisk := disks[len(disks)-1]
 	highDiskInfo, err := queryDiskInfo(client, CapacitySize, replicaServer, "", highUsageDisk.Disk, false)
