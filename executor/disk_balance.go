@@ -296,11 +296,11 @@ func getMigrateDiskInfo(client *Client, replicaServer string, disks []NodeCapaci
 func computeMigrateAction(migrate *MigrateDisk) (*MigrateAction, error) {
 	lowDiskCanReceiveMax := migrate.AverageUsage - migrate.LowDisk.NodeCapacity.Usage
 	highDiskCanSendMax := migrate.HighDisk.NodeCapacity.Usage - migrate.AverageUsage
-	sizeToMove := int64(math.Min(float64(lowDiskCanReceiveMax), float64(highDiskCanSendMax)))
+	sizeNeedMove := int64(math.Min(float64(lowDiskCanReceiveMax), float64(highDiskCanSendMax)))
 
 	var selectReplica *ReplicaCapacityStruct
 	for i := len(migrate.HighDisk.ReplicaCapacity) - 1; i >= 0; i-- {
-		if migrate.HighDisk.ReplicaCapacity[i].Size > sizeToMove {
+		if migrate.HighDisk.ReplicaCapacity[i].Size > sizeNeedMove {
 			continue
 		} else {
 			selectReplica = &migrate.HighDisk.ReplicaCapacity[i]
@@ -309,18 +309,18 @@ func computeMigrateAction(migrate *MigrateDisk) (*MigrateAction, error) {
 	}
 
 	if selectReplica == nil {
-		return nil, fmt.Errorf("can't balance: sizeToMove=%dMB, but the min replica size is %dMB",
-			sizeToMove, migrate.HighDisk.ReplicaCapacity[0].Size)
+		return nil, fmt.Errorf("can't balance: sizeNeedMove=%dMB, but the min replica(%s) size is %dMB",
+			sizeNeedMove, migrate.HighDisk.ReplicaCapacity[0].Gpid, migrate.HighDisk.ReplicaCapacity[0].Size)
 	}
 
 	// if select replica size is too small, it will need migrate many replica and result in `replica count not balance` among disk
 	if selectReplica.Size < (10 << 10) {
-		return nil, fmt.Errorf("not suggest balance: the replica(%s) size is too small, replica size=%dMB, sizeToMove=%dMB",
-			selectReplica.Gpid, selectReplica.Size, sizeToMove)
+		return nil, fmt.Errorf("not suggest balance: the replica(%s) size is too small, replica size=%dMB, sizeNeedMove=%dMB",
+			selectReplica.Gpid, selectReplica.Size, sizeNeedMove)
 	}
 
-	fmt.Printf("disk migrate(sizeToMove=%dMB): node=%s, from=%s, to=%s, gpid(%s)=%s(size=%dMB)\n",
-		sizeToMove, migrate.currentNode,
+	fmt.Printf("ACTION:disk migrate(sizeNeedMove=%dMB): node=%s, from=%s, to=%s, gpid(%s)=%s(size=%dMB)\n",
+		sizeNeedMove, migrate.currentNode,
 		migrate.HighDisk.NodeCapacity.Disk,
 		migrate.LowDisk.NodeCapacity.Disk,
 		selectReplica.Status,
