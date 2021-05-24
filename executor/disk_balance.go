@@ -107,7 +107,7 @@ func DiskBalance(client *Client, replicaServer string, auto bool) error {
 					time.Sleep(time.Second * 10)
 					continue
 				}
-				fmt.Printf("migrate(%s: %s => %s) is completed， result=%s\n",
+				fmt.Printf("migrate(%s: %s => %s) is completed，result=%s\n\n",
 					action.replica.Gpid, action.from, action.to, err.Error())
 				break
 			}
@@ -333,7 +333,7 @@ func computeMigrateAction(migrate *MigrateDisk) (*MigrateAction, error) {
 			migrate.HighDisk.DiskCapacity.Disk, migrate.LowDisk.DiskCapacity.Disk, selectReplica.Gpid, selectReplica.Size, sizeNeedMove)
 	}
 
-	fmt.Printf("ACTION:disk migrate(sizeNeedMove=%dMB): node=%s, %s(%dMB[%d%%])=>%s(%dMB[%d%%]), gpid(%s)=%s(%dMB)\n",
+	fmt.Printf("ACTION:disk migrate(sizeNeedMove=%dMB): node=%s, %s[%dMB(%d%%)]=>%s[%dMB(%d%%)], gpid(%s)=%s(%dMB)\n",
 		sizeNeedMove, migrate.currentNode,
 		migrate.HighDisk.DiskCapacity.Disk,
 		migrate.HighDisk.DiskCapacity.Usage,
