@@ -105,7 +105,7 @@ func DiskBalance(client *Client, replicaServer string, minSize int64, auto bool)
 					time.Sleep(time.Second * 10)
 					continue
 				}
-				fmt.Printf("migrate(%s) is completed，result=%s\n\n", action.toString(), err.Error())
+				fmt.Printf("migrate(%s) is completed，result=%s, wait disk cleaner remove garbage...\n\n", action.toString(), err.Error())
 				break
 			}
 			time.Sleep(time.Second * 90)
