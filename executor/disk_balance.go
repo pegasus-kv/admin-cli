@@ -270,8 +270,8 @@ func getMigrateDiskInfo(client *Client, replicaServer string, disks []DiskCapaci
 		return nil, err
 	}
 
-	if highUsageDisk.Ratio < 50 {
-		return nil, fmt.Errorf("no need balance for the high disk still enough capacity(balance threshold=50%%): "+
+	if highUsageDisk.Ratio < 10 {
+		return nil, fmt.Errorf("no need balance for the high disk still enough capacity(balance threshold=10%%): "+
 			"high(%s): %dMB(%d%%); low(%s): %dMB(%d%%)", highUsageDisk.Disk, highUsageDisk.Usage,
 			highUsageDisk.Ratio, lowUsageDisk.Disk, lowUsageDisk.Usage, lowUsageDisk.Ratio)
 	}
