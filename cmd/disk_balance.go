@@ -53,7 +53,7 @@ func init() {
 		Help: "auto-migrate replica to let the disks space balance within the given ReplicaServer",
 		Flags: func(f *grumble.Flags) {
 			f.String("n", "node", "", "target node, for example, 127.0.0.1:34801")
-			f.Int64("s", "size", 10<<10, "allow migrate min replica size")
+			f.Int64("s", "size", 10<<10, "allow migrate min replica size, default 10GB")
 			f.Bool("a", "auto", false, "auto balance node until the the node is balanced")
 		},
 		Run: func(c *grumble.Context) error {
