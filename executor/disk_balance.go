@@ -133,6 +133,10 @@ func changeDiskCleanerInterval(client *Client, replicaServer string, cleanInterv
 	if err != nil {
 		return err
 	}
+	err = ConfigCommand(client, session.NodeTypeReplica, replicaServer, "gc_disk_migration_origin_replica_interval_seconds", "set", cleanInterval)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
