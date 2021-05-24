@@ -64,7 +64,7 @@ func DiskMigrate(client *Client, replicaServer string, pidStr string, from strin
 	return nil
 }
 
-func DiskBalance(client *Client, replicaServer string, auto bool) error {
+func DiskBalance(client *Client, replicaServer string, minSize int64, auto bool) error {
 	err := changeDiskCleanerInterval(client, replicaServer, 1)
 	if err != nil {
 		return err
@@ -77,7 +77,7 @@ func DiskBalance(client *Client, replicaServer string, auto bool) error {
 	}()
 
 	for {
-		action, err := getNextMigrateAction(client, replicaServer)
+		action, err := getNextMigrateAction(client, replicaServer, minSize)
 		if err != nil {
 			return err
 		}
@@ -158,7 +158,7 @@ func changeDiskCleanerInterval(client *Client, replicaServer string, cleanInterv
 	return nil
 }
 
-func getNextMigrateAction(client *Client, replicaServer string) (*MigrateAction, error) {
+func getNextMigrateAction(client *Client, replicaServer string, minSize int64) (*MigrateAction, error) {
 	disks, totalUsage, totalCapacity, err := queryDiskCapacityInfo(client, replicaServer)
 	if err != nil {
 		return nil, err
@@ -168,7 +168,7 @@ func getNextMigrateAction(client *Client, replicaServer string) (*MigrateAction,
 		return nil, err
 	}
 
-	migrateAction, err := computeMigrateAction(diskMigrateInfo)
+	migrateAction, err := computeMigrateAction(diskMigrateInfo, minSize)
 	if err != nil {
 		return nil, err
 	}
@@ -314,7 +314,7 @@ func getMigrateDiskInfo(client *Client, replicaServer string, disks []DiskCapaci
 	}, nil
 }
 
-func computeMigrateAction(migrate *MigrateDisk) (*MigrateAction, error) {
+func computeMigrateAction(migrate *MigrateDisk, minSize int64) (*MigrateAction, error) {
 	lowDiskCanReceiveMax := migrate.AverageUsage - migrate.LowDisk.DiskCapacity.Usage
 	highDiskCanSendMax := migrate.HighDisk.DiskCapacity.Usage - migrate.AverageUsage
 	sizeNeedMove := int64(math.Min(float64(lowDiskCanReceiveMax), float64(highDiskCanSendMax)))
@@ -338,9 +338,9 @@ func computeMigrateAction(migrate *MigrateDisk) (*MigrateAction, error) {
 	}
 
 	// if select replica size is too small, it will need migrate many replica and result in `replica count not balance` among disk
-	if selectReplica.Size < (10 << 10) {
-		return nil, fmt.Errorf("not suggest balance(%s): the replica(%s) size is too small, replica size=%dMB, sizeNeedMove=%dMB",
-			migrate.toString(), selectReplica.Gpid, selectReplica.Size, sizeNeedMove)
+	if selectReplica.Size < minSize {
+		return nil, fmt.Errorf("not suggest balance(%s): the replica size(%s=%dMB) is too small(must >=%dMB), sizeNeedMove=%dMB",
+			migrate.toString(), selectReplica.Gpid, selectReplica.Size, minSize, sizeNeedMove)
 	}
 
 	fmt.Printf("ACTION:disk migrate(sizeNeedMove=%dMB): %s, gpid(%s)=%s(%dMB)\n",
