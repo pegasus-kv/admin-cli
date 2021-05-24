@@ -91,8 +91,7 @@ func DiskBalance(client *Client, replicaServer string, auto bool) error {
 		}
 		err = DiskMigrate(client, replicaServer, action.replica.Gpid, action.from, action.to)
 		if err == nil {
-			fmt.Printf("migrate(%s: %s=>%s) has started, wait complete...\n",
-				action.replica.Gpid, action.from, action.to)
+			fmt.Printf("migrate(%s) has started, wait complete...\n", action.toString())
 			for {
 				// TODO(jiashuo1): using DiskMigrate RPC to query status, consider support queryDiskMigrateStatus RPC
 				err = DiskMigrate(client, replicaServer, action.replica.Gpid, action.from, action.to)
@@ -102,13 +101,11 @@ func DiskBalance(client *Client, replicaServer string, auto bool) error {
 				}
 
 				if strings.Contains(err.Error(), "ERR_BUSY") {
-					fmt.Printf("migrate(%s: %s=>%s) is running, msg=%s, wait complete...\n",
-						action.replica.Gpid, action.from, action.to, err.Error())
+					fmt.Printf("migrate(%s) is running, msg=%s, wait complete...\n", action.toString(), err.Error())
 					time.Sleep(time.Second * 10)
 					continue
 				}
-				fmt.Printf("migrate(%s: %s=>%s) is completed，result=%s\n\n",
-					action.replica.Gpid, action.from, action.to, err.Error())
+				fmt.Printf("migrate(%s) is completed，result=%s\n\n", action.toString(), err.Error())
 				break
 			}
 			time.Sleep(time.Second * 90)
@@ -135,11 +132,21 @@ type MigrateDisk struct {
 	LowDisk      DiskStats
 }
 
+func (m *MigrateDisk) toString() string {
+	return fmt.Sprintf("Node=%s, HighDisk=%s[%dMB(%d%%)], LowDisk=%s[%dMB(%d%%)]", m.currentNode,
+		m.HighDisk.DiskCapacity.Disk, m.HighDisk.DiskCapacity.Usage, m.HighDisk.DiskCapacity.Ratio,
+		m.LowDisk.DiskCapacity.Disk, m.LowDisk.DiskCapacity.Usage, m.LowDisk.DiskCapacity.Ratio)
+}
+
 type MigrateAction struct {
 	node    string
 	replica ReplicaCapacityStruct
 	from    string
 	to      string
+}
+
+func (m *MigrateAction) toString() string {
+	return fmt.Sprintf("node=%s, replica=%s, %s=>%s", m.node, m.replica.Gpid, m.from, m.to)
 }
 
 func changeDiskCleanerInterval(client *Client, replicaServer string, cleanInterval int64) error {
@@ -323,14 +330,8 @@ func computeMigrateAction(migrate *MigrateDisk) (*MigrateAction, error) {
 	}
 
 	if selectReplica == nil {
-		return nil, fmt.Errorf("can't balance(%s[%dMB(%d%%)]=>%s[%dMB(%d%%)]): sizeNeedMove=%dMB, "+
-			"but the min replica(%s) size is %dMB on high disk",
-			migrate.HighDisk.DiskCapacity.Disk,
-			migrate.HighDisk.DiskCapacity.Usage,
-			migrate.HighDisk.DiskCapacity.Ratio,
-			migrate.LowDisk.DiskCapacity.Disk,
-			migrate.LowDisk.DiskCapacity.Usage,
-			migrate.LowDisk.DiskCapacity.Ratio,
+		return nil, fmt.Errorf("can't balance(%s): sizeNeedMove=%dMB,but the min replica(%s) size is %dMB on high disk",
+			migrate.toString(),
 			sizeNeedMove,
 			migrate.HighDisk.ReplicaCapacity[0].Gpid,
 			migrate.HighDisk.ReplicaCapacity[0].Size)
@@ -338,30 +339,12 @@ func computeMigrateAction(migrate *MigrateDisk) (*MigrateAction, error) {
 
 	// if select replica size is too small, it will need migrate many replica and result in `replica count not balance` among disk
 	if selectReplica.Size < (10 << 10) {
-		return nil, fmt.Errorf("not suggest balance(%s[%dMB(%d%%)]=>%s[%dMB(%d%%)]): "+
-			"the replica(%s) size is too small, replica size=%dMB, sizeNeedMove=%dMB",
-			migrate.HighDisk.DiskCapacity.Disk,
-			migrate.HighDisk.DiskCapacity.Usage,
-			migrate.HighDisk.DiskCapacity.Ratio,
-			migrate.LowDisk.DiskCapacity.Disk,
-			migrate.LowDisk.DiskCapacity.Usage,
-			migrate.LowDisk.DiskCapacity.Ratio,
-			selectReplica.Gpid,
-			selectReplica.Size,
-			sizeNeedMove)
+		return nil, fmt.Errorf("not suggest balance(%s): the replica(%s) size is too small, replica size=%dMB, sizeNeedMove=%dMB",
+			migrate.toString(), selectReplica.Gpid, selectReplica.Size, sizeNeedMove)
 	}
 
-	fmt.Printf("ACTION:disk migrate(sizeNeedMove=%dMB): node=%s, %s[%dMB(%d%%)]=>%s[%dMB(%d%%)], gpid(%s)=%s(%dMB)\n",
-		sizeNeedMove, migrate.currentNode,
-		migrate.HighDisk.DiskCapacity.Disk,
-		migrate.HighDisk.DiskCapacity.Usage,
-		migrate.HighDisk.DiskCapacity.Ratio,
-		migrate.LowDisk.DiskCapacity.Disk,
-		migrate.LowDisk.DiskCapacity.Usage,
-		migrate.LowDisk.DiskCapacity.Ratio,
-		selectReplica.Status,
-		selectReplica.Gpid,
-		selectReplica.Size)
+	fmt.Printf("ACTION:disk migrate(sizeNeedMove=%dMB): %s, gpid(%s)=%s(%dMB)\n",
+		sizeNeedMove, migrate.toString(), selectReplica.Status, selectReplica.Gpid, selectReplica.Size)
 
 	return &MigrateAction{
 		node:    migrate.currentNode,
