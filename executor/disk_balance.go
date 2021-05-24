@@ -330,16 +330,16 @@ func computeMigrateAction(migrate *MigrateDisk, minSize int64) (*MigrateAction, 
 	}
 
 	if selectReplica == nil {
-		return nil, fmt.Errorf("can't balance(%s): sizeNeedMove=%dMB, but the min replica(%s) size is %dMB on high disk(min size must <= sizeNeedMove)",
+		return nil, fmt.Errorf("can't balance(%s): high disk min replica(%s) size(%dMB) must <= sizeNeedMove(%dMB)",
 			migrate.toString(),
-			sizeNeedMove,
 			migrate.HighDisk.ReplicaCapacity[0].Gpid,
-			migrate.HighDisk.ReplicaCapacity[0].Size)
+			migrate.HighDisk.ReplicaCapacity[0].Size,
+			sizeNeedMove)
 	}
 
 	// if select replica size is too small, it will need migrate many replica and result in `replica count not balance` among disk
 	if selectReplica.Size < minSize {
-		return nil, fmt.Errorf("not suggest balance(%s): the qualified(must<=sizeNeedMove(%dMB)) replica size(%s=%dMB) is too small(must>=minSize(%dMB))",
+		return nil, fmt.Errorf("not suggest balance(%s): the qualified(must<=sizeNeedMove(%dMB)) replica size(%s=%dMB) must >= minSize(%dMB))",
 			migrate.toString(), sizeNeedMove, selectReplica.Gpid, selectReplica.Size, minSize)
 	}
 
