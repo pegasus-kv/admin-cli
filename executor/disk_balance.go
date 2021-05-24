@@ -69,6 +69,13 @@ func DiskBalance(client *Client, replicaServer string, auto bool) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		err = changeDiskCleanerInterval(client, replicaServer, 86400)
+		if err != nil {
+			fmt.Println("revert disk cleaner failed")
+		}
+	}()
+
 	for {
 		action, err := getNextMigrateAction(client, replicaServer)
 		if err != nil {
@@ -105,7 +112,8 @@ func DiskBalance(client *Client, replicaServer string, auto bool) error {
 					time.Sleep(time.Second * 10)
 					continue
 				}
-				fmt.Printf("migrate(%s from %s to %s) is completed， result=%s", action.replica.Gpid, action.from, action.to, err.Error())
+				fmt.Printf("migrate(%s from %s to %s) is completed， result=%s",
+					action.replica.Gpid, action.from, action.to, err.Error())
 				break
 			}
 		}
@@ -114,10 +122,6 @@ func DiskBalance(client *Client, replicaServer string, auto bool) error {
 			continue
 		}
 		break
-	}
-	err = changeDiskCleanerInterval(client, replicaServer, 86400)
-	if err != nil {
-		return err
 	}
 	return nil
 }
