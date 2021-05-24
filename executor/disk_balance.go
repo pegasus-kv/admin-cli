@@ -292,13 +292,13 @@ func getMigrateDiskInfo(client *Client, replicaServer string, disks []DiskCapaci
 			lowUsageDisk.Usage, lowUsageDisk.Ratio, averageUsage, averageRatio)
 	}
 
-	replicaCapacityOnHighDisk, err := convertReplicaCapacityStruct(highUsageDisk.Disk, highDiskInfo)
-	if err != nil {
-		return nil, err
+	replicaCapacityOnHighDisk, err := convertReplicaCapacityStruct(highDiskInfo)
+	if err != nil { // we need migrate replica from high disk, so the convert must be successful
+		return nil, fmt.Errorf("convert replica on high disk(%s) failed: %s", highUsageDisk.Disk, err.Error())
 	}
-	replicaCapacityOnLowDisk, err := convertReplicaCapacityStruct(lowUsageDisk.Disk, lowDiskInfo)
-	if err != nil {
-		return nil, err
+	replicaCapacityOnLowDisk, err := convertReplicaCapacityStruct(lowDiskInfo)
+	if err != nil { // we don't care the replica capacity info on low disk, if convert failed, we only log warning and know the result=nil
+		fmt.Printf("WARNING: convert replica on low disk(%s) failed: %s", lowUsageDisk.Disk, err.Error())
 	}
 	return &MigrateDisk{
 		AverageUsage: averageUsage,
@@ -354,7 +354,7 @@ func computeMigrateAction(migrate *MigrateDisk, minSize int64) (*MigrateAction, 
 	}, nil
 }
 
-func convertReplicaCapacityStruct(disk string, replicaCapacityInfos []interface{}) ([]ReplicaCapacityStruct, error) {
+func convertReplicaCapacityStruct(replicaCapacityInfos []interface{}) ([]ReplicaCapacityStruct, error) {
 	util.SortStructsByField(replicaCapacityInfos, "Size")
 	var replicas []ReplicaCapacityStruct
 	for _, replica := range replicaCapacityInfos {
@@ -365,7 +365,7 @@ func convertReplicaCapacityStruct(disk string, replicaCapacityInfos []interface{
 		}
 	}
 	if replicas == nil {
-		return nil, fmt.Errorf("the disk(%s) has no replica", disk)
+		return nil, fmt.Errorf("the disk has no replica")
 	}
 	return replicas, nil
 }
