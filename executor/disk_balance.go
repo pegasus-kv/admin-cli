@@ -294,11 +294,11 @@ func getMigrateDiskInfo(client *Client, replicaServer string, disks []DiskCapaci
 
 	replicaCapacityOnHighDisk, err := convertReplicaCapacityStruct(highDiskInfo)
 	if err != nil { // we need migrate replica from high disk, so the convert must be successful
-		return nil, fmt.Errorf("convert replica on high disk(%s) failed: %s", highUsageDisk.Disk, err.Error())
+		return nil, fmt.Errorf("parse replica info on high disk(%s) failed: %s", highUsageDisk.Disk, err.Error())
 	}
 	replicaCapacityOnLowDisk, err := convertReplicaCapacityStruct(lowDiskInfo)
 	if err != nil { // we don't care the replica capacity info on low disk, if convert failed, we only log warning and know the result=nil
-		fmt.Printf("WARNING: convert replica on low disk(%s) failed: %s", lowUsageDisk.Disk, err.Error())
+		fmt.Printf("WARNING: parse replica info on low disk(%s) failed: %s", lowUsageDisk.Disk, err.Error())
 	}
 	return &MigrateDisk{
 		AverageUsage: averageUsage,
