@@ -91,7 +91,7 @@ func DiskBalance(client *Client, replicaServer string, auto bool) error {
 		}
 		err = DiskMigrate(client, replicaServer, action.replica.Gpid, action.from, action.to)
 		if err == nil {
-			fmt.Printf("migrate(%s: %s => %s) has started, wait complete...\n",
+			fmt.Printf("migrate(%s: %s=>%s) has started, wait complete...\n",
 				action.replica.Gpid, action.from, action.to)
 			for {
 				// TODO(jiashuo1): using DiskMigrate RPC to query status, consider support queryDiskMigrateStatus RPC
@@ -102,12 +102,12 @@ func DiskBalance(client *Client, replicaServer string, auto bool) error {
 				}
 
 				if strings.Contains(err.Error(), "ERR_BUSY") {
-					fmt.Printf("migrate(%s: %s => %s) is running, msg=%s, wait complete...\n",
+					fmt.Printf("migrate(%s: %s=>%s) is running, msg=%s, wait complete...\n",
 						action.replica.Gpid, action.from, action.to, err.Error())
 					time.Sleep(time.Second * 10)
 					continue
 				}
-				fmt.Printf("migrate(%s: %s => %s) is completed，result=%s\n\n",
+				fmt.Printf("migrate(%s: %s=>%s) is completed，result=%s\n\n",
 					action.replica.Gpid, action.from, action.to, err.Error())
 				break
 			}
@@ -323,8 +323,17 @@ func computeMigrateAction(migrate *MigrateDisk) (*MigrateAction, error) {
 	}
 
 	if selectReplica == nil {
-		return nil, fmt.Errorf("can't balance(%s => %s): sizeNeedMove=%dMB, but the min replica(%s) size is %dMB on high disk",
-			migrate.HighDisk.DiskCapacity.Disk, migrate.LowDisk.DiskCapacity.Disk, sizeNeedMove, migrate.HighDisk.ReplicaCapacity[0].Gpid, migrate.HighDisk.ReplicaCapacity[0].Size)
+		return nil, fmt.Errorf("can't balance(%s[%dMB(%d%%)]=>%s[%dMB(%d%%)]): sizeNeedMove=%dMB, "+
+			"but the min replica(%s) size is %dMB on high disk",
+			migrate.HighDisk.DiskCapacity.Disk,
+			migrate.HighDisk.DiskCapacity.Usage,
+			migrate.HighDisk.DiskCapacity.Ratio,
+			migrate.LowDisk.DiskCapacity.Disk,
+			migrate.LowDisk.DiskCapacity.Usage,
+			migrate.LowDisk.DiskCapacity.Ratio,
+			sizeNeedMove,
+			migrate.HighDisk.ReplicaCapacity[0].Gpid,
+			migrate.HighDisk.ReplicaCapacity[0].Size)
 	}
 
 	// if select replica size is too small, it will need migrate many replica and result in `replica count not balance` among disk
