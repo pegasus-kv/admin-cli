@@ -83,15 +83,21 @@ func DiskBalance(client *Client, replicaServer string, auto bool) error {
 			continue
 		}
 		err = DiskMigrate(client, replicaServer, action.replica.Gpid, action.from, action.to)
-		if err == nil || strings.Contains(err.Error(), "ERR_BUSY") {
-			fmt.Printf("migrate(%s from %s to %s) is running, msg=%s, try again",
-				action.replica.Gpid, action.from, action.to, err)
-			time.Sleep(time.Second * 30)
+		if err == nil {
+			fmt.Printf("migrate(%s from %s to %s) has started, wait complete...\n",
+				action.replica.Gpid, action.from, action.to)
+			time.Sleep(time.Second * 90)
+			continue
+		}
+		if strings.Contains(err.Error(), "ERR_BUSY") {
+			fmt.Printf("migrate(%s from %s to %s) is running, msg=%s, wait complete...\n",
+				action.replica.Gpid, action.from, action.to, err.Error())
+			time.Sleep(time.Second * 90)
 			continue
 		}
 		fmt.Printf("migrate(%s from %s to %s) is completed", action.replica.Gpid, action.from, action.to)
 		if auto {
-			time.Sleep(time.Second * 60)
+			time.Sleep(time.Second * 90)
 			continue
 		}
 		break
