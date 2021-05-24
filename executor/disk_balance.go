@@ -294,7 +294,6 @@ func computeMigrateAction(migrate *MigrateDisk) (*MigrateAction, error) {
 
 	var selectReplica *ReplicaCapacityStruct
 	for i := len(migrate.HighDisk.ReplicaCapacity) - 1; i >= 0; i-- {
-		fmt.Printf("%s:%d", migrate.HighDisk.ReplicaCapacity[i].Gpid , migrate.HighDisk.ReplicaCapacity[i].Size)
 		if migrate.HighDisk.ReplicaCapacity[i].Size > sizeToMove {
 			continue
 		} else {
