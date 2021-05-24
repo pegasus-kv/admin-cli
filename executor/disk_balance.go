@@ -338,7 +338,8 @@ func computeMigrateAction(migrate *MigrateDisk) (*MigrateAction, error) {
 
 	// if select replica size is too small, it will need migrate many replica and result in `replica count not balance` among disk
 	if selectReplica.Size < (10 << 10) {
-		return nil, fmt.Errorf("not suggest balance(%s[%dMB(%d%%)]=>%s[%dMB(%d%%)]): the replica(%s) size is too small, replica size=%dMB, sizeNeedMove=%dMB",
+		return nil, fmt.Errorf("not suggest balance(%s[%dMB(%d%%)]=>%s[%dMB(%d%%)]): "+
+			"the replica(%s) size is too small, replica size=%dMB, sizeNeedMove=%dMB",
 			migrate.HighDisk.DiskCapacity.Disk,
 			migrate.HighDisk.DiskCapacity.Usage,
 			migrate.HighDisk.DiskCapacity.Ratio,
