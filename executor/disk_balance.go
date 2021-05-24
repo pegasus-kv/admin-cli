@@ -133,7 +133,7 @@ type MigrateDisk struct {
 }
 
 func (m *MigrateDisk) toString() string {
-	return fmt.Sprintf("Node=%s, HighDisk=%s[%dMB(%d%%)], LowDisk=%s[%dMB(%d%%)]", m.currentNode,
+	return fmt.Sprintf("Node=%s, HighDisk=%s[%dMB(%d%%)]=>LowDisk=%s[%dMB(%d%%)]", m.currentNode,
 		m.HighDisk.DiskCapacity.Disk, m.HighDisk.DiskCapacity.Usage, m.HighDisk.DiskCapacity.Ratio,
 		m.LowDisk.DiskCapacity.Disk, m.LowDisk.DiskCapacity.Usage, m.LowDisk.DiskCapacity.Ratio)
 }
@@ -339,7 +339,7 @@ func computeMigrateAction(migrate *MigrateDisk, minSize int64) (*MigrateAction, 
 
 	// if select replica size is too small, it will need migrate many replica and result in `replica count not balance` among disk
 	if selectReplica.Size < minSize {
-		return nil, fmt.Errorf("not suggest balance(%s): the replica size(%s=%dMB) is too small(must >=%dMB), sizeNeedMove=%dMB",
+		return nil, fmt.Errorf("not suggest balance(%s): the selected replica size(%s=%dMB) is too small(must >=%dMB), sizeNeedMove=%dMB",
 			migrate.toString(), selectReplica.Gpid, selectReplica.Size, minSize, sizeNeedMove)
 	}
 
