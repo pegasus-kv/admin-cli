@@ -143,7 +143,7 @@ type MigrateAction struct {
 }
 
 func changeDiskCleanerInterval(client *Client, replicaServer string, cleanInterval int64) error {
-	fmt.Printf("set gc_disk_migration_origin_replica_interval_seconds = %ds ",  cleanInterval)
+	fmt.Printf("set gc_disk_migration_origin_replica_interval_seconds = %ds ", cleanInterval)
 	err := ConfigCommand(client, session.NodeTypeReplica, replicaServer, "gc_disk_migration_origin_replica_interval_seconds", "set", cleanInterval)
 	if err != nil {
 		return err
