@@ -278,7 +278,7 @@ func getMigrateDiskInfo(client *Client, replicaServer string, disks []DiskCapaci
 
 	averageUsage := totalUsage / int64(len(disks))
 	averageRatio := totalUsage * 100 / totalCapacity
-	if highUsageDisk.Ratio-lowUsageDisk.Ratio < 10 {
+	if highUsageDisk.Ratio-lowUsageDisk.Ratio < 5 {
 		return nil, fmt.Errorf("no need balance for the disk is balanced:"+
 			" high(%s): %dMB(%d%%); low(%s): %dMB(%d%%); average: %dMB(%d%%)",
 			highUsageDisk.Disk, highUsageDisk.Usage, highUsageDisk.Ratio, lowUsageDisk.Disk,
