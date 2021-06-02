@@ -64,7 +64,7 @@ func DiskMigrate(client *Client, replicaServer string, pidStr string, from strin
 // auto balance target node disk usage:
 // -1. change the pegasus server disk cleaner internal for clean temp replica to free disk space in time
 // -2. get the optimal migrate action to be ready to balance the disk until can't migrate base latest disk space stats
-// -3. if current replica is `Secondary` status, force assign the replica to Secondary status
+// -3. if current replica is `primary` status, force assign the replica to `secondary` status
 // -4. migrate the replica base `getNextMigrateAction` result
 // -5. loop query migrate progress using `DiskMigrate`, it will response `ERR_BUSY` if running
 // -6. start next loop until can't allow to balance the node
