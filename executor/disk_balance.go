@@ -181,8 +181,7 @@ func getNextMigrateAction(client *Client, replicaServer string, minSize int64) (
 
 func forceAssignReplicaToSecondary(client *Client, replicaServer string, gpid string) error {
 	fmt.Printf("WARNING: the select replica is not secondary, will force assign it secondary\n")
-	_, err := client.Meta.MetaControl(admin.MetaFunctionLevel_fl_steady)
-	if err != nil {
+	if _, err := client.Meta.MetaControl(admin.MetaFunctionLevel_fl_steady); err != nil {
 		return err
 	}
 	secondaryNode, err := getReplicaSecondaryNode(client, gpid)
