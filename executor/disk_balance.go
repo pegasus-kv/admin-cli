@@ -159,10 +159,7 @@ func changeDiskCleanerInterval(client *Client, replicaServer string, cleanInterv
 	fmt.Printf("set gc_disk_migration_origin_replica_interval_seconds = %ds ", cleanInterval)
 	err := ConfigCommand(client, session.NodeTypeReplica, replicaServer,
 		"gc_disk_migration_origin_replica_interval_seconds", "set", cleanInterval)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func getNextMigrateAction(client *Client, replicaServer string, minSize int64) (*MigrateAction, error) {
@@ -196,9 +193,8 @@ func forceAssignReplicaToSecondary(client *Client, replicaServer string, gpid st
 	if err != nil {
 		return err
 	}
-	err = client.Meta.Balance(replica, adminClient.BalanceMovePri,
+	return client.Meta.Balance(replica, adminClient.BalanceMovePri,
 		util.NewNodeFromTCPAddr(replicaServer, session.NodeTypeReplica), secondaryNode)
-	return err
 }
 
 // todo(jiashuo1) next pr
