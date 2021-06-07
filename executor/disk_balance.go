@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/XiaoMi/pegasus-go-client/idl/radmin"
 	"github.com/XiaoMi/pegasus-go-client/session"
 	"github.com/pegasus-kv/admin-cli/util"
@@ -76,8 +77,7 @@ func DiskBalance(client *Client, replicaServer string, minSize int64, auto bool)
 		return err
 	}
 	defer func() {
-		err = changeDiskCleanerInterval(client, replicaServer, 86400)
-		if err != nil {
+		if err = changeDiskCleanerInterval(client, replicaServer, 86400); err != nil {
 			fmt.Println("revert disk cleaner failed")
 		}
 	}()
@@ -106,7 +106,7 @@ func DiskBalance(client *Client, replicaServer string, minSize int64, auto bool)
 					continue
 				}
 
-				if strings.Contains(err.Error(), "ERR_BUSY") {
+				if strings.Contains(err.Error(), base.ERR_BUSY.String()) {
 					fmt.Printf("migrate(%s) is running, msg=%s, wait complete...\n", action.toString(), err.Error())
 					time.Sleep(time.Second * 10)
 					continue

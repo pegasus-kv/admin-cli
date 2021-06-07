@@ -41,10 +41,7 @@ const (
 // QueryDiskInfo command
 func QueryDiskInfo(client *Client, infoType DiskInfoType, replicaServer string, tableName string, diskTag string) error {
 	_, err := queryDiskInfo(client, infoType, replicaServer, tableName, diskTag, true)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func queryDiskInfo(client *Client, infoType DiskInfoType, replicaServer string, tableName string, diskTag string, print bool) ([]interface{}, error) {
