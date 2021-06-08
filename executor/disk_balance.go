@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/XiaoMi/pegasus-go-client/idl/admin"
+	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/XiaoMi/pegasus-go-client/idl/radmin"
 	"github.com/XiaoMi/pegasus-go-client/session"
 	adminClient "github.com/pegasus-kv/admin-cli/client"
@@ -64,6 +65,11 @@ func DiskMigrate(client *Client, replicaServer string, pidStr string, from strin
 	return nil
 }
 
+const (
+	WaitRunning  = time.Second * 10 // time for wait migrate complete
+	WaitCleaning = time.Second * 90 // time for wait garbage replica to clean complete
+)
+
 // auto balance target node disk usage:
 // -1. change the pegasus server disk cleaner internal for clean temp replica to free disk space in time
 // -2. get the optimal migrate action to be ready to balance the disk until can't migrate base latest disk space stats
@@ -74,13 +80,11 @@ func DiskMigrate(client *Client, replicaServer string, pidStr string, from strin
 // -7. recover disk cleaner internal if balance complete
 // -8. set meta status to `lively` to balance primary and secondary // TODO(jiashuo1)
 func DiskBalance(client *Client, replicaServer string, minSize int64, auto bool) error {
-	err := changeDiskCleanerInterval(client, replicaServer, 1)
-	if err != nil {
+	if err := changeDiskCleanerInterval(client, replicaServer, 1); err != nil {
 		return err
 	}
 	defer func() {
-		err = changeDiskCleanerInterval(client, replicaServer, 86400)
-		if err != nil {
+		if err := changeDiskCleanerInterval(client, replicaServer, 86400); err != nil {
 			fmt.Println("revert disk cleaner failed")
 		}
 	}()
@@ -95,7 +99,7 @@ func DiskBalance(client *Client, replicaServer string, minSize int64, auto bool)
 			if err != nil {
 				return err
 			}
-			time.Sleep(time.Second * 10)
+			time.Sleep(WaitRunning)
 			continue
 		}
 		err = DiskMigrate(client, replicaServer, action.replica.Gpid, action.from, action.to)
@@ -105,29 +109,26 @@ func DiskBalance(client *Client, replicaServer string, minSize int64, auto bool)
 				// TODO(jiashuo1): using DiskMigrate RPC to query status, consider support queryDiskMigrateStatus RPC
 				err = DiskMigrate(client, replicaServer, action.replica.Gpid, action.from, action.to)
 				if err == nil {
-					time.Sleep(time.Second * 10)
+					time.Sleep(WaitRunning)
 					continue
 				}
-
-				if strings.Contains(err.Error(), "ERR_BUSY") {
+				if strings.Contains(err.Error(), base.ERR_BUSY.String()) {
 					fmt.Printf("migrate(%s) is running, msg=%s, wait complete...\n", action.toString(), err.Error())
-					time.Sleep(time.Second * 10)
+					time.Sleep(WaitRunning)
 					continue
 				}
-				fmt.Printf("migrate(%s) is completed，result=%s, wait disk cleaner remove garbage...\n\n",
-					action.toString(), err.Error())
+				fmt.Printf("migrate(%s) is completed，result=%s, wait disk cleaner remove garbage...\n\n", action.toString(), err.Error())
 				break
 			}
-			time.Sleep(time.Second * 90)
+			time.Sleep(WaitCleaning)
 			continue
 		}
 		if auto {
-			time.Sleep(time.Second * 90)
+			time.Sleep(WaitCleaning)
 			continue
 		}
 		break
 	}
-
 	return nil
 }
 
@@ -164,10 +165,7 @@ func changeDiskCleanerInterval(client *Client, replicaServer string, cleanInterv
 	fmt.Printf("set gc_disk_migration_origin_replica_interval_seconds = %ds ", cleanInterval)
 	err := ConfigCommand(client, session.NodeTypeReplica, replicaServer,
 		"gc_disk_migration_origin_replica_interval_seconds", "set", cleanInterval)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func getNextMigrateAction(client *Client, replicaServer string, minSize int64) (*MigrateAction, error) {
@@ -189,8 +187,7 @@ func getNextMigrateAction(client *Client, replicaServer string, minSize int64) (
 
 func forceAssignReplicaToSecondary(client *Client, replicaServer string, gpid string) error {
 	fmt.Printf("WARNING: the select replica is not secondary, will force assign it secondary\n")
-	_, err := client.Meta.MetaControl(admin.MetaFunctionLevel_fl_steady)
-	if err != nil {
+	if _, err := client.Meta.MetaControl(admin.MetaFunctionLevel_fl_steady); err != nil {
 		return err
 	}
 	secondaryNode, err := getReplicaSecondaryNode(client, gpid)
@@ -201,12 +198,9 @@ func forceAssignReplicaToSecondary(client *Client, replicaServer string, gpid st
 	if err != nil {
 		return err
 	}
-	err = client.Meta.Balance(replica, adminClient.BalanceMovePri,
+
+	return client.Meta.Balance(replica, adminClient.BalanceMovePri,
 		util.NewNodeFromTCPAddr(replicaServer, session.NodeTypeReplica), secondaryNode)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func getReplicaSecondaryNode(client *Client, gpid string) (*util.PegasusNode, error) {
