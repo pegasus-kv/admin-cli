@@ -198,7 +198,6 @@ func forceAssignReplicaToSecondary(client *Client, replicaServer string, gpid st
 	if err != nil {
 		return err
 	}
-
 	return client.Meta.Balance(replica, adminClient.BalanceMovePri,
 		util.NewNodeFromTCPAddr(replicaServer, session.NodeTypeReplica), secondaryNode)
 }
