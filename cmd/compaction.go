@@ -16,8 +16,8 @@ func init() {
 			 **/
 			f.String("o", "operation-type", "", "operation type, for example: delete/update-ttl")
 			// update ttl operation
-			f.String("u", "", "", "update ttl operation type, for example: from_now/from_current/timestamp")
-			f.Uint("e", "", 0, "expire timestamp")
+			f.String("u", "ttl-type", "", "update ttl operation type, for example: from_now/from_current/timestamp")
+			f.Uint("v", "time-value", 0, "time value")
 			/**
 			 *  rules
 			 **/
@@ -36,8 +36,8 @@ func init() {
 				pegasusClient,
 				c.UseTable,
 				c.Flags.String("operation-type"),
-				c.Flags.String("update-ttl"),
-				c.Flags.Uint("expire-timestamp"),
+				c.Flags.String("ttl-type"),
+				c.Flags.Uint("time-value"),
 				c.Flags.String("hashkey-pattern"),
 				c.Flags.String("hashkey-match"),
 				c.Flags.String("sortkey-pattern"),

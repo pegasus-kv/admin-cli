@@ -8,12 +8,12 @@ import (
 var userSpecifiedCompaction = "user_specified_compaction"
 
 func SetCompaction(client *Client, tableName string,
-	operationType string, updateTTLType string, expireTimestamp uint,
+	operationType string, updateTTLType string, timeValue uint,
 	hashkeyPattern string, hashkeyMatch string,
 	sortkeyPattern string, sortkeyMatch string,
 	startTTL int64, stopTTL int64) error {
 	json, err := generateCompactionEnv(client, tableName,
-		operationType, updateTTLType, expireTimestamp,
+		operationType, updateTTLType, timeValue,
 		hashkeyPattern, hashkeyMatch,
 		sortkeyPattern, sortkeyMatch,
 		startTTL, stopTTL)
@@ -54,7 +54,7 @@ type timeRangeRuleParams struct {
 }
 
 func generateCompactionEnv(client *Client, tableName string,
-	operationType string, updateTTLType string, expireTimestamp uint,
+	operationType string, updateTTLType string, timeValue uint,
 	hashkeyPattern string, hashkeyMatch string,
 	sortkeyPattern string, sortkeyMatch string,
 	startTTL int64, stopTTL int64) (string, error) {
@@ -64,7 +64,7 @@ func generateCompactionEnv(client *Client, tableName string,
 	case "delete":
 		operation.OpType = "COT_DELETE"
 	case "update-ttl":
-		if operation, err = generateUpdateTTLOperation(updateTTLType, expireTimestamp); err != nil {
+		if operation, err = generateUpdateTTLOperation(updateTTLType, timeValue); err != nil {
 			return "", err
 		}
 	default:
@@ -93,9 +93,9 @@ func generateCompactionEnv(client *Client, tableName string,
 	return string(res), nil
 }
 
-func generateUpdateTTLOperation(updateTTLType string, expireTimestamp uint) (*compactionOperation, error) {
+func generateUpdateTTLOperation(updateTTLType string, timeValue uint) (*compactionOperation, error) {
 	var params updateTTLParams
-	params.Timestamp = expireTimestamp
+	params.Value = timeValue
 	switch updateTTLType {
 	case "from_now":
 		params.UpdateTTLOpType = "UTOT_FROM_NOW"
