@@ -30,7 +30,7 @@ import (
 
 	"github.com/XiaoMi/pegasus-go-client/session"
 	"github.com/go-resty/resty/v2"
-	"github.com/pegasus-kv/admin-cli/executor/util"
+	"github.com/pegasus-kv/admin-cli/util"
 )
 
 type httpRequest func(addr string, cmd command) (string, error)
@@ -65,6 +65,11 @@ type response struct {
 	Section string
 	Tags    string
 	Value   string
+}
+
+type cmdResult struct {
+	resp string
+	err  error
 }
 
 //TODO(jiashuo1) not support update collector config
