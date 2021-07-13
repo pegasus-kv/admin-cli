@@ -62,7 +62,7 @@ func generateCompactionEnv(client *Client, tableName string,
 	var operation = &compactionOperation{}
 	switch operationType {
 	case "delete":
-		operation.OpType = "FOT_DELETE"
+		operation.OpType = "COT_DELETE"
 	case "update-ttl":
 		if operation, err = generateUpdateTTLOperation(updateTTLType, expireTimestamp); err != nil {
 			return "", err
@@ -109,7 +109,7 @@ func generateUpdateTTLOperation(updateTTLType string, expireTimestamp uint) (*co
 
 	paramsBytes, _ := json.Marshal(params)
 	var operation = &compactionOperation{
-		OpType: "FOT_UPDATE_TTL",
+		OpType: "COT_UPDATE_TTL",
 		Params: string(paramsBytes),
 	}
 	return operation, nil
