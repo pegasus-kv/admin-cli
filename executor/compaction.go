@@ -39,7 +39,7 @@ type compactionOperation struct {
 }
 type updateTTLParams struct {
 	UpdateTTLOpType string `json:"type"`
-	Timestamp       uint   `json:"timestamp"`
+	Value       	uint   `json:"value"`
 }
 type compactionOperations struct {
 	Ops []compactionOperation `json:"ops"`
