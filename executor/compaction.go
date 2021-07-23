@@ -100,9 +100,9 @@ var updateTTLTypeMapping = map[string]string{
 }
 
 func generateUpdateTTLOperation(updateTTLType string, timeValue uint) (*compactionOperation, error) {
-	var ok bool
 	var params updateTTLParams
 	params.Value = timeValue
+	ok := false
 	if params.UpdateTTLOpType, ok = updateTTLTypeMapping[updateTTLType]; !ok {
 		return nil, fmt.Errorf("not support the type: %s", updateTTLType)
 	}
@@ -141,26 +141,25 @@ func generateRules(hashkeyPattern string, hashkeyMatch string,
 	return res, nil
 }
 
+var ruleTypeMapping = map[string]string{
+	"anywhere": "SMT_MATCH_ANYWHERE",
+	"prefix":   "SMT_MATCH_PREFIX",
+	"postfix":  "SMT_MATCH_POSTFIX",
+}
+
 func generateKeyRule(ruleType string, pattern string, match string) (*compactionRule, error) {
 	var params keyRuleParams
 	params.Pattern = pattern
-	switch match {
-	case "anywhere":
-		params.MatchType = "SMT_MATCH_ANYWHERE"
-	case "prefix":
-		params.MatchType = "SMT_MATCH_PREFIX"
-	case "postfix":
-		params.MatchType = "SMT_MATCH_POSTFIX"
-	default:
+	ok := false
+	if params.MatchType, ok = ruleTypeMapping[ruleType]; !ok {
 		return nil, fmt.Errorf("invalid match type {%s}", match)
 	}
 
 	paramsBytes, _ := json.Marshal(params)
-	var rule = &compactionRule{
+	return &compactionRule{
 		RuleType: ruleType,
 		Params:   string(paramsBytes),
-	}
-	return rule, nil
+	}, nil
 }
 
 func generateTTLRangeRule(startTTL int64, stopTTL int64) compactionRule {
