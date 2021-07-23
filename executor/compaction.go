@@ -93,26 +93,25 @@ func generateCompactionEnv(client *Client, tableName string,
 	return string(res), nil
 }
 
+var updateTTLTypeMapping = map[string]string{
+	"from_now":     "UTOT_FROM_NOW",
+	"from_current": "UTOT_FROM_CURRENT",
+	"timestamp":    "UTOT_TIMESTAMP",
+}
+
 func generateUpdateTTLOperation(updateTTLType string, timeValue uint) (*compactionOperation, error) {
+	var ok bool
 	var params updateTTLParams
 	params.Value = timeValue
-	switch updateTTLType {
-	case "from_now":
-		params.UpdateTTLOpType = "UTOT_FROM_NOW"
-	case "from_current":
-		params.UpdateTTLOpType = "UTOT_FROM_CURRENT"
-	case "timestamp":
-		params.UpdateTTLOpType = "UTOT_TIMESTAMP"
-	default:
-		return nil, fmt.Errorf("invalid update ttl type {%s}", updateTTLType)
+	if params.UpdateTTLOpType, ok = updateTTLTypeMapping[updateTTLType]; !ok {
+		return nil, fmt.Errorf("not support the type: %s", updateTTLType)
 	}
 
 	paramsBytes, _ := json.Marshal(params)
-	var operation = &compactionOperation{
+	return &compactionOperation{
 		OpType: "COT_UPDATE_TTL",
 		Params: string(paramsBytes),
-	}
-	return operation, nil
+	}, nil
 }
 
 func generateRules(hashkeyPattern string, hashkeyMatch string,
