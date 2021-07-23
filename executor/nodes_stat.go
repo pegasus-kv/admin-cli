@@ -20,8 +20,8 @@
 package executor
 
 import (
-	"github.com/pegasus-kv/admin-cli/executor/util"
 	"github.com/pegasus-kv/admin-cli/tabular"
+	"github.com/pegasus-kv/admin-cli/util"
 	"github.com/pegasus-kv/collector/aggregate"
 )
 
@@ -35,6 +35,7 @@ Usage:
   unit: MB
  DiskAvaRatio(%):
   counter: replica*eon.replica_stub*disk.available.total.ratio
+  aggregate: average
  MemUsed:
   counter: replica*server*memused.res(MB)
   unit: MB
@@ -55,12 +56,16 @@ Request:
   counter: replica*app.pegasus*multi_put_qps
  GetBytes:
   counter: replica*app.pegasus*get_bytes
+  unit: byte
  MGetBytes:
   counter: replica*app.pegasus*multi_get_bytes
+  unit: byte
  PutBytes:
   counter: replica*app.pegasus*put_bytes
+  unit: byte
  MputBytes:
   counter: replica*app.pegasus*multi_put_bytes
+  unit: byte
 `
 
 func ShowNodesStat(client *Client) error {

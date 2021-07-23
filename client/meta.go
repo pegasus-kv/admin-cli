@@ -23,13 +23,35 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-
-	"github.com/XiaoMi/pegasus-go-client/idl/base"
+	"time"
 
 	"github.com/XiaoMi/pegasus-go-client/idl/admin"
+	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/XiaoMi/pegasus-go-client/idl/replication"
 	"github.com/XiaoMi/pegasus-go-client/session"
+	"github.com/pegasus-kv/admin-cli/util"
 )
+
+type BalanceType int
+
+const (
+	BalanceMovePri BalanceType = iota
+	BalanceCopyPri
+	BalanceCopySec
+)
+
+func (t BalanceType) String() string {
+	switch t {
+	case BalanceMovePri:
+		return "MovePri"
+	case BalanceCopyPri:
+		return "CopyPri"
+	case BalanceCopySec:
+		return "CopySec"
+	default:
+		panic(fmt.Sprintf("unexpected BalanceType: %d", t))
+	}
+}
 
 // Meta is a helper over pegasus-go-client's primitive session.MetaManager.
 // It aims to provide an easy-to-use API that eliminates some boilerplate code, like
@@ -67,6 +89,17 @@ type Meta interface {
 	ListNodes() ([]*admin.NodeInfo, error)
 
 	RecallApp(originTableID int, newTableName string) (*admin.AppInfo, error)
+
+	Balance(gpid *base.Gpid, opType BalanceType, from *util.PegasusNode, to *util.PegasusNode) error
+
+	Propose(gpid *base.Gpid, action admin.ConfigType, target *util.PegasusNode, node *util.PegasusNode) error
+
+	StartBackupApp(tableID int, providerType string, backupPath string) (*admin.StartBackupAppResponse, error)
+
+	QueryBackupStatus(tableID int, backupID int64) (*admin.QueryBackupStatusResponse, error)
+
+	RestoreApp(oldClusterName string, oldTableName string, oldTableID int, backupID int64, providerType string,
+		newTableName string, restorePath string, skipBadPartition bool, policyName string) (*admin.CreateAppResponse, error)
 }
 
 type rpcBasedMeta struct {
@@ -80,6 +113,8 @@ func NewRPCBasedMeta(metaAddrs []string) Meta {
 	}
 }
 
+// Some responses have not only error-code but also a string-type "hint" that can tells the error details.
+// This function wraps the "hint" into error.
 func wrapHintIntoError(hint string, err error) error {
 	if err != nil {
 		if hint != "" {
@@ -301,6 +336,110 @@ func (m *rpcBasedMeta) RecallApp(originTableID int, newTableName string) (*admin
 	}
 	err := m.callMeta("RecallApp", req, func(resp interface{}) {
 		result = resp.(*admin.RecallAppResponse).Info
+	})
+	return result, err
+}
+
+func getNodeAddress(n *util.PegasusNode) *base.RPCAddress {
+	if n == nil {
+		return &base.RPCAddress{}
+	}
+	return base.NewRPCAddress(n.IP, n.Port)
+}
+
+func newProposalAction(target *util.PegasusNode, node *util.PegasusNode, cfgType admin.ConfigType) *admin.ConfigurationProposalAction {
+	return &admin.ConfigurationProposalAction{
+		Target: getNodeAddress(target),
+		Node:   getNodeAddress(node),
+		Type:   cfgType,
+	}
+}
+
+func (m *rpcBasedMeta) Balance(gpid *base.Gpid, opType BalanceType, from *util.PegasusNode, to *util.PegasusNode) error {
+	req := &admin.BalanceRequest{
+		Gpid: gpid,
+	}
+
+	var actions []*admin.ConfigurationProposalAction
+	switch opType {
+	case BalanceMovePri:
+		actions = append(actions, newProposalAction(from, from, admin.ConfigType_CT_DOWNGRADE_TO_SECONDARY))
+		actions = append(actions, newProposalAction(to, to, admin.ConfigType_CT_UPGRADE_TO_PRIMARY))
+	case BalanceCopyPri:
+		actions = append(actions, newProposalAction(from, to, admin.ConfigType_CT_ADD_SECONDARY_FOR_LB))
+		actions = append(actions, newProposalAction(to, to, admin.ConfigType_CT_UPGRADE_TO_PRIMARY))
+	case BalanceCopySec:
+		actions = append(actions, newProposalAction(nil, to, admin.ConfigType_CT_ADD_SECONDARY_FOR_LB))
+		actions = append(actions, newProposalAction(nil, from, admin.ConfigType_CT_DOWNGRADE_TO_INACTIVE))
+	default:
+		return fmt.Errorf("illegal balance type %d", opType)
+	}
+	req.ActionList = actions
+
+	err := m.callMeta("Balance", req, func(resp interface{}) {})
+	return err
+}
+
+func (m *rpcBasedMeta) Propose(gpid *base.Gpid, action admin.ConfigType, target *util.PegasusNode, node *util.PegasusNode) error {
+	req := &admin.BalanceRequest{
+		Gpid: gpid,
+		ActionList: []*admin.ConfigurationProposalAction{
+			newProposalAction(target, node, action),
+		},
+	}
+	err := m.callMeta("Balance", req, func(resp interface{}) {})
+	return err
+}
+
+func (m *rpcBasedMeta) StartBackupApp(tableID int, providerType string, backupPath string) (*admin.StartBackupAppResponse, error) {
+	req := &admin.StartBackupAppRequest{
+		BackupProviderType: providerType,
+		AppID:              int32(tableID),
+		BackupPath:         &backupPath,
+	}
+	var result *admin.StartBackupAppResponse
+	err := m.callMeta("StartBackupApp", req, func(resp interface{}) {
+		result = resp.(*admin.StartBackupAppResponse)
+	})
+	return result, wrapHintIntoError(result.HintMessage, err)
+}
+
+func (m *rpcBasedMeta) QueryBackupStatus(tableID int, backupID int64) (*admin.QueryBackupStatusResponse, error) {
+	var realBackupID *int64
+	if backupID == 0 {
+		realBackupID = nil
+	} else {
+		realBackupID = &backupID
+	}
+	req := &admin.QueryBackupStatusRequest{
+		AppID:    int32(tableID),
+		BackupID: realBackupID,
+	}
+	var result *admin.QueryBackupStatusResponse
+	err := m.callMeta("QueryBackupStatus", req, func(resp interface{}) {
+		result = resp.(*admin.QueryBackupStatusResponse)
+	})
+	return result, wrapHintIntoError(result.HintMessage, err)
+}
+
+func (m *rpcBasedMeta) RestoreApp(oldClusterName string, oldTableName string, oldTableID int,
+	backupID int64, providerType string, newTableName string, restorePath string,
+	skipBadPartition bool, policyName string) (*admin.CreateAppResponse, error) {
+	req := &admin.RestoreAppRequest{
+		ClusterName:        oldClusterName,
+		PolicyName:         policyName,
+		TimeStamp:          backupID,
+		AppName:            oldTableName,
+		AppID:              int32(oldTableID),
+		NewAppName_:        newTableName,
+		BackupProviderName: providerType,
+		SkipBadPartition:   skipBadPartition,
+		RestorePath:        &restorePath,
+	}
+	var result *admin.CreateAppResponse
+	SetRPCTimeout(time.Second * 20)
+	err := m.callMeta("RestoreApp", req, func(resp interface{}) {
+		result = resp.(*admin.CreateAppResponse)
 	})
 	return result, err
 }

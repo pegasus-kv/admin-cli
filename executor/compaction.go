@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-var userSpecifiedCompaction = "user_specified_compaction"
+const userSpecifiedCompaction = "user_specified_compaction"
 
 func SetCompaction(client *Client, tableName string,
 	operationType string, updateTTLType string, timeValue uint,

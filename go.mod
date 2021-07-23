@@ -3,7 +3,7 @@ module github.com/pegasus-kv/admin-cli
 go 1.14
 
 require (
-	github.com/XiaoMi/pegasus-go-client v0.0.0-20210311071244-d6ef3692d26b
+	github.com/XiaoMi/pegasus-go-client v0.0.0-20210508064509-3af6e8b3c3c4
 	github.com/cheggaaa/pb/v3 v3.0.6
 	github.com/desertbit/grumble v1.1.1
 	github.com/dustin/go-humanize v1.0.0
@@ -21,6 +21,7 @@ require (
 	github.com/spf13/afero v1.5.1 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
+	github.com/stretchr/testify v1.6.1
 	github.com/tidwall/match v1.0.3 // indirect
 	golang.org/x/text v0.3.5 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
