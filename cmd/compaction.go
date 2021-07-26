@@ -32,19 +32,21 @@ func init() {
 			f.Int64L("stop-ttl", -1, "ttl filter, stop ttl")
 		},
 		Run: shell.RequireUseTable(func(c *shell.Context) error {
+			var params = &executor.CompactionParams{
+				OperationType:  c.Flags.String("operation-type"),
+				UpdateTTLType:  c.Flags.String("ttl-type"),
+				TimeValue:      c.Flags.Uint("time-value"),
+				HashkeyPattern: c.Flags.String("hashkey-pattern"),
+				HashkeyMatch:   c.Flags.String("hashkey-match"),
+				SortkeyPattern: c.Flags.String("sortkey-pattern"),
+				SortkeyMatch:   c.Flags.String("sortkey-match"),
+				StartTTL:       c.Flags.Int64("start-ttl"),
+				StopTTL:        c.Flags.Int64("stop-ttl"),
+			}
 			return executor.SetCompaction(
 				pegasusClient,
 				c.UseTable,
-				c.Flags.String("operation-type"),
-				c.Flags.String("ttl-type"),
-				c.Flags.Uint("time-value"),
-				c.Flags.String("hashkey-pattern"),
-				c.Flags.String("hashkey-match"),
-				c.Flags.String("sortkey-pattern"),
-				c.Flags.String("sortkey-match"),
-				c.Flags.Int64("start-ttl"),
-				c.Flags.Int64("stop-ttl"),
-			)
+				params)
 		}),
 	})
 }

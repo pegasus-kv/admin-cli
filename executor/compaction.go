@@ -7,16 +7,20 @@ import (
 
 const userSpecifiedCompaction = "user_specified_compaction"
 
-func SetCompaction(client *Client, tableName string,
-	operationType string, updateTTLType string, timeValue uint,
-	hashkeyPattern string, hashkeyMatch string,
-	sortkeyPattern string, sortkeyMatch string,
-	startTTL int64, stopTTL int64) error {
-	json, err := generateCompactionEnv(client, tableName,
-		operationType, updateTTLType, timeValue,
-		hashkeyPattern, hashkeyMatch,
-		sortkeyPattern, sortkeyMatch,
-		startTTL, stopTTL)
+type CompactionParams struct {
+	OperationType  string
+	UpdateTTLType  string
+	TimeValue      uint
+	HashkeyPattern string
+	HashkeyMatch   string
+	SortkeyPattern string
+	SortkeyMatch   string
+	StartTTL       int64
+	StopTTL        int64
+}
+
+func SetCompaction(client *Client, tableName string, params *CompactionParams) error {
+	json, err := generateCompactionEnv(client, tableName, params)
 	if err != nil {
 		return err
 	}
@@ -53,26 +57,21 @@ type timeRangeRuleParams struct {
 	StopTTL  uint32 `json:"stop_ttl"`
 }
 
-func generateCompactionEnv(client *Client, tableName string,
-	operationType string, updateTTLType string, timeValue uint,
-	hashkeyPattern string, hashkeyMatch string,
-	sortkeyPattern string, sortkeyMatch string,
-	startTTL int64, stopTTL int64) (string, error) {
+func generateCompactionEnv(client *Client, tableName string, params *CompactionParams) (string, error) {
 	var err error
 	var operation = &compactionOperation{}
-	switch operationType {
+	switch params.OperationType {
 	case "delete":
 		operation.OpType = "COT_DELETE"
 	case "update-ttl":
-		if operation, err = generateUpdateTTLOperation(updateTTLType, timeValue); err != nil {
+		if operation, err = generateUpdateTTLOperation(params.UpdateTTLType, params.TimeValue); err != nil {
 			return "", err
 		}
 	default:
-		return "", fmt.Errorf("invalid operation type {%s}", operationType)
+		return "", fmt.Errorf("invalid operation type {%s}", params.OperationType)
 	}
 
-	if operation.Rules, err = generateRules(hashkeyPattern, hashkeyMatch,
-		sortkeyPattern, sortkeyMatch, startTTL, stopTTL); err != nil {
+	if operation.Rules, err = generateRules(params); err != nil {
 		return "", err
 	}
 	if len(operation.Rules) == 0 {
@@ -114,29 +113,27 @@ func generateUpdateTTLOperation(updateTTLType string, timeValue uint) (*compacti
 	}, nil
 }
 
-func generateRules(hashkeyPattern string, hashkeyMatch string,
-	sortkeyPattern string, sortkeyMatch string,
-	startTTL int64, stopTTL int64) ([]compactionRule, error) {
+func generateRules(params *CompactionParams) ([]compactionRule, error) {
 	var res []compactionRule
 	var err error
-	if hashkeyPattern != "" {
+	if params.HashkeyPattern != "" {
 		var rule *compactionRule
-		if rule, err = generateKeyRule("FRT_HASHKEY_PATTERN", hashkeyPattern, hashkeyMatch); err != nil {
+		if rule, err = generateKeyRule("FRT_HASHKEY_PATTERN", params.HashkeyPattern, params.HashkeyMatch); err != nil {
 			return nil, err
 		}
 		res = append(res, *rule)
 	}
 
-	if sortkeyPattern != "" {
+	if params.SortkeyPattern != "" {
 		var rule *compactionRule
-		if rule, err = generateKeyRule("FRT_SORTKEY_PATTERN", sortkeyPattern, sortkeyMatch); err != nil {
+		if rule, err = generateKeyRule("FRT_SORTKEY_PATTERN", params.SortkeyPattern, params.SortkeyMatch); err != nil {
 			return nil, err
 		}
 		res = append(res, *rule)
 	}
 
-	if startTTL >= 0 && stopTTL >= 0 {
-		res = append(res, generateTTLRangeRule(startTTL, stopTTL))
+	if params.StartTTL >= 0 && params.StopTTL >= 0 {
+		res = append(res, generateTTLRangeRule(params.StartTTL, params.StopTTL))
 	}
 	return res, nil
 }
