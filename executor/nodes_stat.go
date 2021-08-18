@@ -42,6 +42,10 @@ Usage:
  BlockCache:
   counter: replica*app.pegasus*rdb.block_cache.memory_usage
   unit: byte
+ HitCount:
+  counter: replica*app.pegasus*rdb.block_cache.hit_count
+ TotalCount:
+  counter: replica*app.pegasus*rdb.block_cache.total_count
  IndexMem:
   counter: replica*app.pegasus*rdb.index_and_filter_blocks.memory_usage
   unit: byte
