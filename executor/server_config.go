@@ -51,7 +51,7 @@ var actionsMap = map[string]action{
 
 var sectionsMap = map[session.NodeType]string{
 	session.NodeTypeMeta:    "meta_server,security",
-	session.NodeTypeReplica: "pegasus.server,security,replication,block_service",
+	session.NodeTypeReplica: "pegasus.server,security,replication,block_service,nfs",
 	// TODO(jiashuo1) support collector
 }
 
@@ -133,7 +133,9 @@ func batchCallHTTP(nodes []*util.PegasusNode, request httpRequest, cmd command) 
 }
 
 func callHTTP(url string) (string, error) {
+	fmt.Println("aaaaaaaaaaaaa")
 	resp, err := resty.New().R().Get(url)
+	fmt.Println("bbbbbbbbbbbbb")
 	if err != nil {
 		return "", fmt.Errorf("failed to call \"%s\": %s", url, err)
 	}
