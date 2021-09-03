@@ -133,9 +133,7 @@ func batchCallHTTP(nodes []*util.PegasusNode, request httpRequest, cmd command) 
 }
 
 func callHTTP(url string) (string, error) {
-	fmt.Println("aaaaaaaaaaaaa")
-	resp, err := resty.New().R().Get(url)
-	fmt.Println("bbbbbbbbbbbbb")
+	resp, err := resty.New().SetTimeout(time.Second * 10).R().Get(url)
 	if err != nil {
 		return "", fmt.Errorf("failed to call \"%s\": %s", url, err)
 	}
