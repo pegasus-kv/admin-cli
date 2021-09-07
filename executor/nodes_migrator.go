@@ -48,6 +48,8 @@ func(origin *MigratorNode) migrateAllReplica(client *Client, to *MigratorNode, c
 				if err != nil {
 					return err
 				}
+
+				var running bool
 				for _, partition := range resp.Partitions {
 					if partition.Pid.String() != gpid.String() {
 						continue
@@ -57,7 +59,6 @@ func(origin *MigratorNode) migrateAllReplica(client *Client, to *MigratorNode, c
 						return fmt.Errorf("please retry assign all primary to seconday")
 					}
 
-					var running bool
 					for _, sec := range partition.Secondaries {
 						currentAddr := client.Nodes.MustGetReplica(sec.GetAddress()).CombinedAddr()
 						if currentAddr == origin.node.CombinedAddr() || currentAddr != to.node.CombinedAddr() {
@@ -65,12 +66,11 @@ func(origin *MigratorNode) migrateAllReplica(client *Client, to *MigratorNode, c
 							break
 						}
 					}
-
-					if running {
-						time.Sleep(10 * time.Second)
-						fmt.Printf("WARN: running, wait action[%s(%s) %s=>%s]",gpid.String(), migrator.BalanceCopySec, origin.node.String(), to.node.String())
-						continue
-					}
+				}
+				if running {
+					time.Sleep(10 * time.Second)
+					fmt.Printf("WARN: running, wait action[%s(%s) %s=>%s]",gpid.String(), migrator.BalanceCopySec, origin.node.String(), to.node.String())
+					continue
 				}
 			}
 		}
