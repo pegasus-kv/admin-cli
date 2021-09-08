@@ -23,14 +23,22 @@ import (
 	"github.com/desertbit/grumble"
 	"github.com/pegasus-kv/admin-cli/executor"
 	"github.com/pegasus-kv/admin-cli/shell"
+
+	"strings"
 )
 
 func init() {
 	shell.AddCommand(&grumble.Command{
 		Name: "node-migrator",
-		Help: "displays the nodes overall status",
+		Help: "migrate all replicas from nodes to other node",
+		Flags: func(a *grumble.Flags) {
+			a.String("f", "from", "", "from")
+			a.String("t", "to", "", "to")
+		},
 		Run: func(c *grumble.Context) error {
-			return executor.ListNodes(pegasusClient)
+			from := strings.Split(c.Flags.String("from"), ",")
+			to := strings.Split(c.Flags.String("to"), ",")
+			return executor.MigrateAllReplicaToNodes(pegasusClient, from, to)
 		},
 	})
 }
