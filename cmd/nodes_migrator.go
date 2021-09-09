@@ -34,11 +34,13 @@ func init() {
 		Flags: func(a *grumble.Flags) {
 			a.String("f", "from", "", "from")
 			a.String("t", "to", "", "to")
+			a.Int64("p", "period", 60, "period seconds")
 		},
 		Run: func(c *grumble.Context) error {
 			from := strings.Split(c.Flags.String("from"), ",")
 			to := strings.Split(c.Flags.String("to"), ",")
-			return executor.MigrateAllReplicaToNodes(pegasusClient, from, to)
+			period := c.Flags.Int64("period")
+			return executor.MigrateAllReplicaToNodes(pegasusClient, period, from, to)
 		},
 	})
 }
