@@ -81,8 +81,9 @@ func MigrateAllReplicaToNodes(client *Client, period int64, from []string, to []
 			fmt.Printf("INFO: completed for all the targets has migrate\n")
 			return ListNodes(client)
 		}
+		round := targetStartNodeIndex / len(targets)
 		currentTargetNode := targets[targetStartNodeIndex%len(targets)]
-		fmt.Printf("\n\n********start migrate replicas to %s******\n", currentTargetNode.String())
+		fmt.Printf("\n\n********[%d]start migrate replicas to %s******\n", round, currentTargetNode.String())
 		fmt.Printf("INFO: migrate out all primary from current node %s\n", currentTargetNode.String())
 		migratePrimariesOut(client, currentTargetNode)
 		tableCompleted := 0
@@ -96,7 +97,7 @@ func MigrateAllReplicaToNodes(client *Client, period int64, from []string, to []
 			tableInvalid = 0
 			remainingReplica = 0
 			for _, tb := range tables {
-				needMigrateReplicaCount, currentNodeHasBalanced, validOriginNode := migrateReplicaPerTable(client, tb.AppName, origins, targets, currentTargetNode)
+				needMigrateReplicaCount, currentNodeHasBalanced, validOriginNode := migrateReplicaPerTable(client, round, tb.AppName, origins, targets, currentTargetNode)
 				remainingReplica = remainingReplica + needMigrateReplicaCount
 				if needMigrateReplicaCount <= 0 || currentNodeHasBalanced {
 					tableCompleted++
@@ -107,6 +108,7 @@ func MigrateAllReplicaToNodes(client *Client, period int64, from []string, to []
 					continue
 				}
 			}
+			time.Sleep(10 * time.Second)
 		}
 	}
 
@@ -151,14 +153,14 @@ func migratePrimariesOut(client *Client, node *util.PegasusNode) {
 	}
 }
 
-func migrateReplicaPerTable(client *Client, table string, origins []*util.PegasusNode, targets []*util.PegasusNode, currentTargetNode *util.PegasusNode) (int, bool, int) {
+func migrateReplicaPerTable(client *Client, round int, table string, origins []*util.PegasusNode, targets []*util.PegasusNode, currentTargetNode *util.PegasusNode) (int, bool, int) {
 	var totalReplicaCount = 0
 	replicas := syncWaitNodeReplicaInfo(client, table)
 	for _, node := range replicas {
 		totalReplicaCount = totalReplicaCount + len(node.replicas)
 	}
 	min := totalReplicaCount / len(targets)
-	max := min + 1
+	max := min + round
 
 	var countNeedMigrate = 0
 	for _, node := range origins {
@@ -359,8 +361,8 @@ func (acts *MigrateActions) put(currentAction *Action) bool {
 func (acts *MigrateActions) exist(currentAction *Action) bool {
 	for _, action := range acts.actionList {
 		if action.replica.part.Pid.String() == currentAction.replica.part.Pid.String() {
-			if action.from.pegasusNode.String() == currentAction.from.pegasusNode.String() ||
-				action.to.pegasusNode.String() == currentAction.to.pegasusNode.String() {
+			if action.to.pegasusNode.String() == currentAction.to.pegasusNode.String() {
+				fmt.Printf("WARN: has called the action: %s, current: %s\n", action.toString(), currentAction.toString())
 				return true
 			}
 		}
