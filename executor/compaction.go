@@ -93,8 +93,8 @@ func generateCompactionEnv(client *Client, tableName string, params *CompactionP
 }
 
 var updateTTLTypeMapping = map[string]string{
-	"from_now":     "UTOT_FROM_NOW",
-	"from_current": "UTOT_FROM_CURRENT",
+	"from-now":     "UTOT_FROM_NOW",
+	"from-current": "UTOT_FROM_CURRENT",
 	"timestamp":    "UTOT_TIMESTAMP",
 }
 
