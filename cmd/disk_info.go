@@ -70,13 +70,13 @@ func init() {
 		Flags: func(f *grumble.Flags) {
 			/*define the flags*/
 			f.String("n", "node", "", "node address(ip:port), for example, 127.0.0.1:34801")
-			f.String("d", "disk-str", "", "disk path string(disk_tag:absolute_disk_path), for example, ssd1:/home/work/ssd1,ssd2:/home/work/ssd2")
+			f.String("d", "disk", "", "disk path string(disk_tag:absolute_disk_path), for example, ssd1:/home/work/ssd1,ssd2:/home/work/ssd2")
 		},
 		Run: func(c *grumble.Context) error {
 			return executor.AddDisk(
 				pegasusClient,
 				c.Flags.String("node"),
-				c.Flags.String("disk-str"))
+				c.Flags.String("disk"))
 		},
 	})
 }
