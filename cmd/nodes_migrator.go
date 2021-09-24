@@ -29,12 +29,12 @@ import (
 
 func init() {
 	shell.AddCommand(&grumble.Command{
-		Name: "node-migrator",
+		Name: "nodes-migrator",
 		Help: "migrate all replicas from nodes to other node",
 		Flags: func(a *grumble.Flags) {
-			a.String("f", "from", "", "from")
-			a.String("t", "to", "", "to")
-			a.Int64("p", "period", 60, "period seconds")
+			a.String("f", "from", "", "origin nodes list, such as: 127.0.0.1:34801,127.0.0.2:34801")
+			a.String("t", "to", "", "target nodes list, such as: 127.0.0.3:34802,127.0.0.3:34802")
+			a.Int64("p", "period", 60, "retry send migrate request period seconds")
 		},
 		Run: func(c *grumble.Context) error {
 			from := strings.Split(c.Flags.String("from"), ",")
