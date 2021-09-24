@@ -10,8 +10,6 @@ import (
 	"github.com/pegasus-kv/admin-cli/util"
 )
 
-// the retry period time if the migrate request failed
-
 func MigrateAllReplicaToNodes(client *Client, period int64, from []string, to []string) error {
 
 	var origins []*util.PegasusNode
