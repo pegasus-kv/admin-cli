@@ -11,10 +11,8 @@ import (
 )
 
 // the retry period time if the migrate request failed
-var retryPeriodSeconds int64
 
 func MigrateAllReplicaToNodes(client *Client, period int64, from []string, to []string) error {
-	retryPeriodSeconds = period
 
 	var origins []*util.PegasusNode
 	var targets []*util.PegasusNode
@@ -51,7 +49,7 @@ func MigrateAllReplicaToNodes(client *Client, period int64, from []string, to []
 			fmt.Printf("INFO: completed for all the targets has migrate\n")
 			return ListNodes(client)
 		}
-		round := targetNodeIndex/ len(targets) + 1
+		round := targetNodeIndex/len(targets) + 1
 		currentTargetNode := targets[targetNodeIndex%len(targets)]
 		fmt.Printf("\n\n********[%d]start migrate replicas to %s******\n", round, currentTargetNode.String())
 		fmt.Printf("INFO: migrate out all primary from current node %s\n", currentTargetNode.String())
