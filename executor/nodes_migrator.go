@@ -75,15 +75,15 @@ func MigrateAllReplicaToNodes(client *Client, period int64, from []string, to []
 		return fmt.Errorf("list app failed: %s", err.Error())
 	}
 
-	var targetStartNodeIndex = 0
+	var targetNodeIndex = 0
 	var remainingReplica = math.MaxInt16
 	for {
 		if remainingReplica <= 0 {
 			fmt.Printf("INFO: completed for all the targets has migrate\n")
 			return ListNodes(client)
 		}
-		round := targetStartNodeIndex / len(targets)
-		currentTargetNode := targets[targetStartNodeIndex%len(targets)]
+		round := targetNodeIndex/ len(targets) + 1
+		currentTargetNode := targets[targetNodeIndex%len(targets)]
 		fmt.Printf("\n\n********[%d]start migrate replicas to %s******\n", round, currentTargetNode.String())
 		fmt.Printf("INFO: migrate out all primary from current node %s\n", currentTargetNode.String())
 		// assign all primary replica to secondary on target node to avoid read influence
@@ -92,8 +92,8 @@ func MigrateAllReplicaToNodes(client *Client, period int64, from []string, to []
 		for {
 			// migrate enough replica to one target node per round.
 			// pick next node if all tables have been handled completed.
-			if tableCompleted >= len(tables){
-				targetStartNodeIndex++
+			if tableCompleted >= len(tables) {
+				targetNodeIndex++
 				break
 			}
 			tableCompleted = 0
