@@ -38,6 +38,7 @@ type MigratorNode struct {
 	pegasusNode *util.PegasusNode
 	replicas    []*Replica
 }
+
 type Replica struct {
 	part      *replication.PartitionConfiguration
 	operation migrator.BalanceType
@@ -85,26 +86,27 @@ func MigrateAllReplicaToNodes(client *Client, period int64, from []string, to []
 		currentTargetNode := targets[targetStartNodeIndex%len(targets)]
 		fmt.Printf("\n\n********[%d]start migrate replicas to %s******\n", round, currentTargetNode.String())
 		fmt.Printf("INFO: migrate out all primary from current node %s\n", currentTargetNode.String())
+		// assign all primary replica to secondary on target node to avoid read influence
 		migratePrimariesOut(client, currentTargetNode)
 		tableCompleted := 0
-		tableInvalid := 0
 		for {
-			if tableCompleted >= len(tables) || tableInvalid > 0 {
+			// migrate enough replica to one target node per round.
+			// pick next node if all tables have been handled completed.
+			if tableCompleted >= len(tables){
 				targetStartNodeIndex++
 				break
 			}
 			tableCompleted = 0
-			tableInvalid = 0
 			remainingReplica = 0
 			for _, tb := range tables {
-				needMigrateReplicaCount, currentNodeHasBalanced, validOriginNode := migrateReplicaPerTable(client, round, tb.AppName, origins, targets, currentTargetNode)
+				needMigrateReplicaCount, currentNodeHasBalanced, validOriginNode :=
+					migrateReplicaPerTable(client, round, tb.AppName, origins, targets, currentTargetNode)
 				remainingReplica = remainingReplica + needMigrateReplicaCount
-				if needMigrateReplicaCount <= 0 || currentNodeHasBalanced {
+				// table migrate completed if all replicas have been migrated or
+				// target node has been balanced or
+				// origin nodes has no valid replica can be migrated
+				if needMigrateReplicaCount <= 0 || currentNodeHasBalanced || validOriginNode == 0 {
 					tableCompleted++
-					continue
-				}
-				if validOriginNode == 0 {
-					tableInvalid++
 					continue
 				}
 			}
@@ -153,7 +155,8 @@ func migratePrimariesOut(client *Client, node *util.PegasusNode) {
 	}
 }
 
-func migrateReplicaPerTable(client *Client, round int, table string, origins []*util.PegasusNode, targets []*util.PegasusNode, currentTargetNode *util.PegasusNode) (int, bool, int) {
+func migrateReplicaPerTable(client *Client, round int, table string, origins []*util.PegasusNode,
+	targets []*util.PegasusNode, currentTargetNode *util.PegasusNode) (int, bool, int) {
 	var totalReplicaCount = 0
 	replicas := syncWaitNodeReplicaInfo(client, table)
 	for _, node := range replicas {
