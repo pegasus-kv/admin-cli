@@ -87,5 +87,6 @@ func migratePrimariesOut(client *Client, node *util.PegasusNode) {
 
 func migrateReplicaPerTable(client *Client, round int, table string, origins []*util.PegasusNode,
 	targets []*util.PegasusNode, currentTargetNode *util.PegasusNode) (int, bool, int) {
+	//todo
 	return 0, false, 0
 }
