@@ -93,7 +93,6 @@ func MigrateAllReplicaToNodes(client *Client, period int64, from []string, to []
 			time.Sleep(10 * time.Second)
 		}
 	}
-
 }
 
 func migratePrimariesOut(client *Client, node *util.PegasusNode) {
