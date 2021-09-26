@@ -49,7 +49,7 @@ func convert(client *Client, nodes []string) ([]*util.PegasusNode, error) {
 func MigrateAllReplicaToNodes(client *Client, period int64, from []string, to []string) error {
 	origins, targets, err := convert2PegasusNodeStruct(client, from, to)
 	if err != nil {
-		return fmt.Errorf("invalid origin or target node")
+		return fmt.Errorf("invalid origin or target node, error = %s", err.Error())
 	}
 
 	tables, err := client.Meta.ListApps(admin.AppStatus_AS_AVAILABLE)
