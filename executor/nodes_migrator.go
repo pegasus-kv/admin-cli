@@ -10,28 +10,45 @@ import (
 	"github.com/pegasus-kv/admin-cli/util"
 )
 
+var targetNodeIndex = 0
+
+// return the target node and the round index(the migrate may be execute multi round)
+func getTargetNode(targets []*util.PegasusNode) (*util.PegasusNode, int) {
+	round := targetNodeIndex/len(targets) + 1
+	node := targets[targetNodeIndex%len(targets)]
+	return node, round
+}
+
+func convert2PegasusNodeStruct(client *Client, from []string, to []string) ([]*util.PegasusNode, []*util.PegasusNode, error) {
+	origins, err := convert(client, from)
+	if err != nil {
+		return nil, nil, err
+	}
+	targets, err := convert(client, to)
+	if err != nil {
+		return nil, nil, err
+	}
+	return origins, targets, nil
+}
+
+func convert(client *Client, nodes []string) ([]*util.PegasusNode, error) {
+	var pegasusNodes []*util.PegasusNode
+	for _, addr := range nodes {
+		n, err := client.Nodes.GetNode(addr, session.NodeTypeReplica)
+		if err != nil {
+			return nil, fmt.Errorf("list node failed: %s", err)
+		}
+		pegasusNodes = append(pegasusNodes, n)
+	}
+	if pegasusNodes == nil {
+		return nil, fmt.Errorf("invalid nodes list")
+	}
+	return pegasusNodes, nil
+}
+
 func MigrateAllReplicaToNodes(client *Client, period int64, from []string, to []string) error {
-
-	var origins []*util.PegasusNode
-	var targets []*util.PegasusNode
-
-	for _, addr := range from {
-		n, err := client.Nodes.GetNode(addr, session.NodeTypeReplica)
-		if err != nil {
-			return fmt.Errorf("list node failed: %s", err)
-		}
-		origins = append(origins, n)
-	}
-
-	for _, addr := range to {
-		n, err := client.Nodes.GetNode(addr, session.NodeTypeReplica)
-		if err != nil {
-			return fmt.Errorf("list node failed: %s", err)
-		}
-		targets = append(targets, n)
-	}
-
-	if origins == nil || targets == nil {
+	origins, targets, err := convert2PegasusNodeStruct(client, from, to)
+	if err != nil {
 		return fmt.Errorf("invalid origin or target node")
 	}
 
@@ -40,15 +57,13 @@ func MigrateAllReplicaToNodes(client *Client, period int64, from []string, to []
 		return fmt.Errorf("list app failed: %s", err.Error())
 	}
 
-	var targetNodeIndex = 0
 	var remainingReplica = math.MaxInt16
 	for {
 		if remainingReplica <= 0 {
 			fmt.Printf("INFO: completed for all the targets has migrate\n")
 			return ListNodes(client)
 		}
-		round := targetNodeIndex/len(targets) + 1
-		currentTargetNode := targets[targetNodeIndex%len(targets)]
+		currentTargetNode, round := getTargetNode(targets)
 		fmt.Printf("\n\n********[%d]start migrate replicas to %s******\n", round, currentTargetNode.String())
 		fmt.Printf("INFO: migrate out all primary from current node %s\n", currentTargetNode.String())
 		// assign all primary replica to secondary on target node to avoid read influence
