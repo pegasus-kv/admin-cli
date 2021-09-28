@@ -17,20 +17,20 @@ func (m *Migrator) run(client *executor.Client, table string, round int, target 
 	for {
 		remainingCount := m.getRemainingReplicaCount(client, table)
 		if remainingCount <= 0 {
-			fmt.Printf("INFO: [%s]completed for no replicas can be migrated with table\n", table)
+			fmt.Printf("INFO: [%s]completed for no replicas can be migrated\n", table)
 			return remainingCount
 		}
 
 		validOriginNodes := m.getValidOriginNodes(client, table, target)
 		if len(validOriginNodes) == 0 {
-			fmt.Printf("INFO: [%s]no valid repica can be migrated with table\n", table)
+			fmt.Printf("INFO: [%s]no valid replicas can be migratede\n", table)
 			return remainingCount
 		}
 
 		balanceCount := m.getBalanceReplicaCount(client, table)
 		currentCount := m.getCurrentReplicaCount()
 		if currentCount >= balanceCount {
-			fmt.Printf("INFO: [%s]balance with need max: no need migrate replicas to %s, currentCount=%d, expect=max(%d)\n",
+			fmt.Printf("INFO: [%s]balance: no need migrate replicas to %s, currentCount=%d, expect=max(%d)\n",
 				table, target.String(), currentCount, balanceCount)
 			return remainingCount
 		}
