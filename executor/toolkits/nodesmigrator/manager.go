@@ -31,13 +31,13 @@ func MigrateAllReplicaToNodes(client *executor.Client, period int, from []string
 		currentTargetNode.downgradeAllReplicaToSecondary(client)
 		fmt.Printf("\n\n********[%d]start migrate replicas to %s******\n", round, currentTargetNode.String())
 		fmt.Printf("INFO: migrate out all primary from current node %s\n", currentTargetNode.String())
-		for {
-			totalRemainingReplica = 0
-			for _, tb := range tables {
-				remainingCount := nodesMigrator.run(client, tb.AppName, round, currentTargetNode)
-				totalRemainingReplica = totalRemainingReplica + remainingCount
-			}
-			time.Sleep(10 * time.Second)
+
+		totalRemainingReplica = 0
+		for _, tb := range tables {
+			remainingCount := nodesMigrator.run(client, tb.AppName, round, currentTargetNode)
+			totalRemainingReplica = totalRemainingReplica + remainingCount
 		}
+		time.Sleep(10 * time.Second)
+
 	}
 }
