@@ -184,7 +184,7 @@ func migrateReplicaPerTable(client *Client, round int, table string, origins []*
 			return countNeedMigrate, true, len(validOriginNodes)
 		}
 
-		loopCount := int(math.Min(float64(len(origins)), float64(max-currentCountOfTargetNode)))
+		loopCount := int(math.Min(float64(len(validOriginNodes)), float64(max-currentCountOfTargetNode)))
 		var wg sync.WaitGroup
 		wg.Add(loopCount)
 		for loopCount > 0 {
