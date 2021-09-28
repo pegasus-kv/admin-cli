@@ -12,9 +12,9 @@ import (
 type MigratorNode struct {
 	// todo: for ci pass, the variable is necessary in later pr
 	//table       string
-	client   *executor.Client
-	node     *util.PegasusNode
-	replicas []*Replica
+	client *executor.Client
+	node   *util.PegasusNode
+	//replicas []*Replica
 }
 
 type Replica struct {
