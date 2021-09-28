@@ -25,28 +25,46 @@ type Replica struct {
 	//operation migrator.BalanceType
 }
 
+var targetNodeIndex = 0
+
+// return the target node and the round index(the migrate may be execute multi round)
+func getTargetNode(targets []*util.PegasusNode) (*util.PegasusNode, int) {
+	round := targetNodeIndex/len(targets) + 1
+	node := targets[targetNodeIndex%len(targets)]
+	return node, round
+}
+
+func convert2PegasusNodeStruct(client *Client, from []string, to []string) ([]*util.PegasusNode, []*util.PegasusNode, error) {
+	origins, err := convert(client, from)
+	if err != nil {
+		return nil, nil, err
+	}
+	targets, err := convert(client, to)
+	if err != nil {
+		return nil, nil, err
+	}
+	return origins, targets, nil
+}
+
+func convert(client *Client, nodes []string) ([]*util.PegasusNode, error) {
+	var pegasusNodes []*util.PegasusNode
+	for _, addr := range nodes {
+		n, err := client.Nodes.GetNode(addr, session.NodeTypeReplica)
+		if err != nil {
+			return nil, fmt.Errorf("list node failed: %s", err)
+		}
+		pegasusNodes = append(pegasusNodes, n)
+	}
+	if pegasusNodes == nil {
+		return nil, fmt.Errorf("invalid nodes list")
+	}
+	return pegasusNodes, nil
+}
+
 func MigrateAllReplicaToNodes(client *Client, period int64, from []string, to []string) error {
-	var origins []*util.PegasusNode
-	var targets []*util.PegasusNode
-
-	for _, addr := range from {
-		n, err := client.Nodes.GetNode(addr, session.NodeTypeReplica)
-		if err != nil {
-			return fmt.Errorf("list node failed: %s", err)
-		}
-		origins = append(origins, n)
-	}
-
-	for _, addr := range to {
-		n, err := client.Nodes.GetNode(addr, session.NodeTypeReplica)
-		if err != nil {
-			return fmt.Errorf("list node failed: %s", err)
-		}
-		targets = append(targets, n)
-	}
-
-	if origins == nil || targets == nil {
-		return fmt.Errorf("invalid origin or target node")
+	origins, targets, err := convert2PegasusNodeStruct(client, from, to)
+	if err != nil {
+		return fmt.Errorf("invalid origin or target node, error = %s", err.Error())
 	}
 
 	tables, err := client.Meta.ListApps(admin.AppStatus_AS_AVAILABLE)
@@ -54,15 +72,13 @@ func MigrateAllReplicaToNodes(client *Client, period int64, from []string, to []
 		return fmt.Errorf("list app failed: %s", err.Error())
 	}
 
-	var targetNodeIndex = 0
 	var remainingReplica = math.MaxInt16
 	for {
 		if remainingReplica <= 0 {
 			fmt.Printf("INFO: completed for all the targets has migrate\n")
 			return ListNodes(client)
 		}
-		round := targetNodeIndex/len(targets) + 1
-		currentTargetNode := targets[targetNodeIndex%len(targets)]
+		currentTargetNode, round := getTargetNode(targets)
 		fmt.Printf("\n\n********[%d]start migrate replicas to %s******\n", round, currentTargetNode.String())
 		fmt.Printf("INFO: migrate out all primary from current node %s\n", currentTargetNode.String())
 		// assign all primary replica to secondary on target node to avoid read influence
@@ -92,7 +108,6 @@ func MigrateAllReplicaToNodes(client *Client, period int64, from []string, to []
 			time.Sleep(10 * time.Second)
 		}
 	}
-
 }
 
 func migratePrimariesOut(client *Client, node *util.PegasusNode) {
@@ -137,70 +152,52 @@ func migratePrimariesOut(client *Client, node *util.PegasusNode) {
 
 func migrateReplicaPerTable(client *Client, round int, table string, origins []*util.PegasusNode,
 	targets []*util.PegasusNode, currentTargetNode *util.PegasusNode) (int, bool, int) {
-	var totalReplicaCount = 0
-	replicas := syncAndWaitNodeReplicaInfo(client, table)
-	for _, node := range replicas {
-		totalReplicaCount = totalReplicaCount + len(node.replicas)
-	}
-	min := totalReplicaCount / len(targets)
-	max := min + round
-
-	var countNeedMigrate = 0
-	for _, node := range origins {
-		countNeedMigrate = countNeedMigrate + len(replicas[node.String()].replicas)
-	}
-
-	var balanceNode = 0
-	for _, node := range targets {
-		if len(replicas[node.String()].replicas) >= min {
-			balanceNode++
+	for {
+		var totalReplicaCount = 0
+		replicas := syncAndWaitNodeReplicaInfo(client, table)
+		for _, node := range replicas {
+			totalReplicaCount = totalReplicaCount + len(node.replicas)
 		}
-	}
+		min := totalReplicaCount / len(targets)
+		max := min + round
 
-	validOriginNodes := getValidOriginNodes(client, table, origins, currentTargetNode)
-	if len(validOriginNodes) == 0 {
-		fmt.Printf("INFO: [%s]no valid repica can be migrated with table\n", table)
-		return countNeedMigrate, false, 0
-	}
+		var countNeedMigrate = 0
+		for _, node := range origins {
+			countNeedMigrate = countNeedMigrate + len(replicas[node.String()].replicas)
+		}
 
-	if countNeedMigrate <= 0 {
-		fmt.Printf("INFO: [%s]completed for no replicas can be migrated with table\n", table)
-		return countNeedMigrate, false, len(validOriginNodes)
-	}
+		validOriginNodes := getValidOriginNodes(client, table, origins, currentTargetNode)
+		if len(validOriginNodes) == 0 {
+			fmt.Printf("INFO: [%s]no valid repica can be migrated with table\n", table)
+			return countNeedMigrate, false, 0
+		}
 
-	currentCountOfTargetNode := len(replicas[currentTargetNode.String()].replicas)
-	if currentCountOfTargetNode >= min && balanceNode < len(targets) {
-		fmt.Printf("INFO: [%s]balance, no need migrate replicas to %s, currentCount=%d, expect=min(%d) or max(%d)\n",
-			table, currentTargetNode.String(), currentCountOfTargetNode, min, max)
-		return countNeedMigrate, true, len(validOriginNodes)
-	}
+		if countNeedMigrate <= 0 {
+			fmt.Printf("INFO: [%s]completed for no replicas can be migrated with table\n", table)
+			return countNeedMigrate, false, len(validOriginNodes)
+		}
 
-	if currentCountOfTargetNode >= max {
-		fmt.Printf("INFO: [%s]balance with need max: no need migrate replicas to %s, currentCount=%d, expect=min(%d) or max(%d)\n",
-			table, currentTargetNode.String(), currentCountOfTargetNode, min, max)
-		return countNeedMigrate, true, len(validOriginNodes)
-	}
+		currentCountOfTargetNode := len(replicas[currentTargetNode.String()].replicas)
+		if currentCountOfTargetNode >= max {
+			fmt.Printf("INFO: [%s]balance with need max: no need migrate replicas to %s, currentCount=%d, expect=min(%d) or max(%d)\n",
+				table, currentTargetNode.String(), currentCountOfTargetNode, min, max)
+			return countNeedMigrate, true, len(validOriginNodes)
+		}
 
-	var balanceReplicaCount int
-	if balanceNode < len(targets) {
-		balanceReplicaCount = min
-	} else {
-		balanceReplicaCount = max
+		loopCount := int(math.Min(float64(len(origins)), float64(max-currentCountOfTargetNode)))
+		var wg sync.WaitGroup
+		wg.Add(loopCount)
+		for loopCount > 0 {
+			go func(to *util.PegasusNode) {
+				migrateReplica(client, table, validOriginNodes, currentTargetNode)
+				wg.Done()
+			}(currentTargetNode)
+			loopCount--
+		}
+		fmt.Printf("INFO: [%s]async migrate task call complete, wait all works successfully\n", table)
+		wg.Wait()
+		fmt.Printf("INFO: [%s]all works successfully\n\n", table)
 	}
-	var wg sync.WaitGroup
-	loopCount := int(math.Min(float64(len(origins)), float64(balanceReplicaCount-currentCountOfTargetNode)))
-	wg.Add(loopCount)
-	for loopCount > 0 {
-		go func(to *util.PegasusNode) {
-			migrateReplica(client, table, validOriginNodes, currentTargetNode)
-			wg.Done()
-		}(currentTargetNode)
-		loopCount--
-	}
-	fmt.Printf("INFO: [%s]async migrate task call complete, wait all works successfully\n", table)
-	wg.Wait()
-	fmt.Printf("INFO: [%s]all works successfully\n\n", table)
-	return countNeedMigrate, false, len(validOriginNodes)
 }
 
 func getValidOriginNodes(client *Client, table string, origins []*util.PegasusNode, target *util.PegasusNode) []*util.PegasusNode {
