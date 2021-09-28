@@ -38,6 +38,5 @@ func MigrateAllReplicaToNodes(client *executor.Client, period int, from []string
 			totalRemainingReplica = totalRemainingReplica + remainingCount
 		}
 		time.Sleep(10 * time.Second)
-
 	}
 }
