@@ -6,11 +6,12 @@ import (
 
 	"github.com/XiaoMi/pegasus-go-client/session"
 	"github.com/pegasus-kv/admin-cli/executor"
+	"github.com/pegasus-kv/admin-cli/util"
 )
 
 type Migrator struct {
-	origins []*MigratorNode
-	targets []*MigratorNode
+	origins []*util.PegasusNode
+	targets []*util.PegasusNode
 }
 
 func (m *Migrator) run(client *executor.Client, table string, round int, target *MigratorNode) int {
@@ -43,7 +44,7 @@ func (m *Migrator) run(client *executor.Client, table string, round int, target 
 func (m *Migrator) getCurrentTargetNode(index int) (int, *MigratorNode) {
 	round := index/len(m.targets) + 1
 	currentTargetNode := m.targets[index%len(m.targets)]
-	return round, currentTargetNode
+	return round, &MigratorNode{node: currentTargetNode}
 }
 
 func (m *Migrator) getCurrentReplicaCountOnNode() int {
@@ -83,7 +84,7 @@ func createNewMigrator(client *executor.Client, from []string, to []string) (*Mi
 	}, nil
 }
 
-func convert2MigratorNodes(client *executor.Client, from []string, to []string) ([]*MigratorNode, []*MigratorNode, error) {
+func convert2MigratorNodes(client *executor.Client, from []string, to []string) ([]*util.PegasusNode, []*util.PegasusNode, error) {
 	origins, err := convert(client, from)
 	if err != nil {
 		return nil, nil, err
@@ -95,19 +96,17 @@ func convert2MigratorNodes(client *executor.Client, from []string, to []string) 
 	return origins, targets, nil
 }
 
-func convert(client *executor.Client, nodes []string) ([]*MigratorNode, error) {
-	var migratorNodes []*MigratorNode
+func convert(client *executor.Client, nodes []string) ([]*util.PegasusNode, error) {
+	var pegasusNodes []*util.PegasusNode
 	for _, addr := range nodes {
 		node, err := client.Nodes.GetNode(addr, session.NodeTypeReplica)
 		if err != nil {
 			return nil, fmt.Errorf("list node failed: %s", err)
 		}
-		migratorNodes = append(migratorNodes, &MigratorNode{
-			node: node,
-		})
+		pegasusNodes = append(pegasusNodes, node)
 	}
-	if migratorNodes == nil {
+	if pegasusNodes == nil {
 		return nil, fmt.Errorf("invalid nodes list")
 	}
-	return migratorNodes, nil
+	return pegasusNodes, nil
 }
