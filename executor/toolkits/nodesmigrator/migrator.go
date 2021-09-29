@@ -34,15 +34,15 @@ func (m *Migrator) run(client *executor.Client, table string, round int, target 
 			return remainingCount
 		}
 
-		balanceCount := m.getExpectReplicaCount(round)
+		expectCount := m.getExpectReplicaCount(round)
 		currentCount := m.getCurrentReplicaCount(target)
-		if currentCount >= balanceCount {
-			fmt.Printf("INFO: [%s]balance: no need migrate replicas to %s, currentCount=%d, expect=max(%d)\n",
-				table, target.String(), currentCount, balanceCount)
+		if currentCount >= expectCount {
+			fmt.Printf("INFO: [%s]balance: no need migrate replicas to %s, current=%d, expect=max(%d)\n",
+				table, target.String(), currentCount, expectCount)
 			return remainingCount
 		}
 
-		maxConcurrentCount := int(math.Min(float64(len(validOriginNodes)), float64(balanceCount-currentCount)))
+		maxConcurrentCount := int(math.Min(float64(len(validOriginNodes)), float64(expectCount-currentCount)))
 		m.submitMigrateTaskAndWait(client, table, validOriginNodes, target, maxConcurrentCount)
 	}
 }
