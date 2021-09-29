@@ -27,8 +27,8 @@ func (m *Migrator) run(client *executor.Client, table string, round int, target 
 			return remainingCount
 		}
 
-		balanceCount := m.getBalanceReplicaCount(client, table)
-		currentCount := m.getCurrentReplicaCount()
+		balanceCount := m.getReplicaCountIfBalanced(client, table)
+		currentCount := m.getCurrentReplicaCountOnNode()
 		if currentCount >= balanceCount {
 			fmt.Printf("INFO: [%s]balance: no need migrate replicas to %s, currentCount=%d, expect=max(%d)\n",
 				table, target.String(), currentCount, balanceCount)
@@ -46,7 +46,7 @@ func (m *Migrator) getCurrentTargetNode(index int) (int, *MigratorNode) {
 	return round, currentTargetNode
 }
 
-func (m *Migrator) getCurrentReplicaCount() int {
+func (m *Migrator) getCurrentReplicaCountOnNode() int {
 	// todo
 	return 0
 }
@@ -56,7 +56,7 @@ func (m *Migrator) getRemainingReplicaCount(client *executor.Client, table strin
 	return 0
 }
 
-func (m *Migrator) getBalanceReplicaCount(client *executor.Client, table string) int {
+func (m *Migrator) getReplicaCountIfBalanced(client *executor.Client, table string) int {
 	// todo
 	return 0
 }
