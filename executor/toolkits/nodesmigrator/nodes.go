@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/XiaoMi/pegasus-go-client/idl/replication"
 	migrator "github.com/pegasus-kv/admin-cli/client"
 	"github.com/pegasus-kv/admin-cli/executor"
@@ -62,4 +63,9 @@ func (m *MigratorNode) checkIfNoPrimary(client *executor.Client) bool {
 
 func (m *MigratorNode) String() string {
 	return m.node.String()
+}
+
+func (m *MigratorNode) contain(gpid *base.Gpid) bool {
+	// todo
+	return true
 }

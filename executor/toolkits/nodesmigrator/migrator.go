@@ -22,20 +22,20 @@ type Migrator struct {
 func (m *Migrator) run(client *executor.Client, table string, round int, target *MigratorNode) int {
 	for {
 		m.updateNodesReplicaInfo(client, table)
-		remainingCount := m.getRemainingReplicaCount(client, table)
+		remainingCount := m.getRemainingReplicaCount()
 		if remainingCount <= 0 {
 			fmt.Printf("INFO: [%s]completed for no replicas can be migrated\n", table)
 			return remainingCount
 		}
 
-		validOriginNodes := m.getValidOriginNodes(client, table, target)
+		validOriginNodes := m.getValidOriginNodes(target)
 		if len(validOriginNodes) == 0 {
 			fmt.Printf("INFO: [%s]no valid replicas can be migratede\n", table)
 			return remainingCount
 		}
 
-		balanceCount := m.getReplicaCountIfBalanced(client, table)
-		currentCount := m.getCurrentReplicaCountOnNode()
+		balanceCount := m.getExpectReplicaCount(round)
+		currentCount := m.getCurrentReplicaCount(target)
 		if currentCount >= balanceCount {
 			fmt.Printf("INFO: [%s]balance: no need migrate replicas to %s, currentCount=%d, expect=max(%d)\n",
 				table, target.String(), currentCount, balanceCount)
@@ -60,6 +60,7 @@ func (m *Migrator) updateNodesReplicaInfo(client *executor.Client, table string)
 			time.Sleep(10 * time.Second)
 			continue
 		}
+		return
 	}
 }
 
@@ -103,7 +104,8 @@ func (m *Migrator) syncNodesReplicaInfo(client *executor.Client, table string) e
 	}
 
 	if currentTotalCount != expectTotalCount {
-		return fmt.Errorf("cluster unhealthy[expect=%d vs actual=%d], please check and wait healthy", expectTotalCount, currentTotalCount)
+		return fmt.Errorf("cluster unhealthy[expect=%d vs actual=%d], please check and wait healthy",
+			expectTotalCount, currentTotalCount)
 	}
 	return nil
 }
@@ -122,24 +124,39 @@ func (m *Migrator) fillReplicasInfo(client *executor.Client, table string,
 	return nil
 }
 
-func (m *Migrator) getCurrentReplicaCountOnNode() int {
-	// todo
-	return 0
+func (m *Migrator) getCurrentReplicaCount(node *MigratorNode) int {
+	return len(m.nodes[node.String()].replicas)
 }
 
-func (m *Migrator) getRemainingReplicaCount(client *executor.Client, table string) int {
-	// todo
-	return 0
+func (m *Migrator) getRemainingReplicaCount() int {
+	var remainingCount = 0
+	for _, node := range m.origins {
+		remainingCount = remainingCount + len(m.nodes[node.String()].replicas)
+	}
+	return remainingCount
 }
 
-func (m *Migrator) getReplicaCountIfBalanced(client *executor.Client, table string) int {
-	// todo
-	return 0
+func (m *Migrator) getExpectReplicaCount(round int) int {
+	totalReplicaCount := 0
+	for _, node := range m.nodes {
+		totalReplicaCount = totalReplicaCount + len(node.replicas)
+	}
+	return (totalReplicaCount / len(m.targets)) + round
 }
 
-func (m *Migrator) getValidOriginNodes(client *executor.Client, table string, target *MigratorNode) []*MigratorNode {
-	//todo
-	return nil
+func (m *Migrator) getValidOriginNodes(target *MigratorNode) []*MigratorNode {
+	targetMigrateNode := m.nodes[target.String()]
+	var validOriginNodes []*MigratorNode
+	for _, origin := range m.origins {
+		originMigrateNode := m.nodes[origin.String()]
+		for _, replica := range originMigrateNode.replicas {
+			if !targetMigrateNode.contain(replica.part.Pid) {
+				validOriginNodes = append(validOriginNodes, originMigrateNode)
+				break
+			}
+		}
+	}
+	return validOriginNodes
 }
 
 func (m *Migrator) submitMigrateTaskAndWait(client *executor.Client, table string, origins []*MigratorNode,
