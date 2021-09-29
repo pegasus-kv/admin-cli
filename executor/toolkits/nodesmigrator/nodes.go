@@ -11,9 +11,7 @@ import (
 
 type MigratorNode struct {
 	// todo: for ci pass, the variable is necessary in later pr
-	//table       string
-	client *executor.Client
-	node   *util.PegasusNode
+	node *util.PegasusNode
 	//replicas []*Replica
 }
 
@@ -25,7 +23,7 @@ type Replica struct {
 
 func (m *MigratorNode) downgradeAllReplicaToSecondary(client *executor.Client) {
 	for {
-		err := migrator.MigratePrimariesOut(m.client.Meta, m.node)
+		err := migrator.MigratePrimariesOut(client.Meta, m.node)
 		if err != nil {
 			fmt.Printf("WARN: wait, migrate primary out of %s is invalid now, err = %s\n", m.String(), err)
 			time.Sleep(30 * time.Second)

@@ -103,8 +103,7 @@ func convert(client *executor.Client, nodes []string) ([]*MigratorNode, error) {
 			return nil, fmt.Errorf("list node failed: %s", err)
 		}
 		migratorNodes = append(migratorNodes, &MigratorNode{
-			client: client,
-			node:   node,
+			node: node,
 		})
 	}
 	if migratorNodes == nil {
