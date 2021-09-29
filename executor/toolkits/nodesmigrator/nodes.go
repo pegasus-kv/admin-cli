@@ -4,21 +4,21 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/XiaoMi/pegasus-go-client/idl/replication"
 	migrator "github.com/pegasus-kv/admin-cli/client"
 	"github.com/pegasus-kv/admin-cli/executor"
 	"github.com/pegasus-kv/admin-cli/util"
 )
 
 type MigratorNode struct {
-	// todo: for ci pass, the variable is necessary in later pr
-	node *util.PegasusNode
-	//replicas []*Replica
+	node     *util.PegasusNode
+	replicas []*Replica
 }
 
 type Replica struct {
 	// todo: for ci pass, the variable is necessary in later pr
-	//part      *replication.PartitionConfiguration
-	//operation migrator.BalanceType
+	part      *replication.PartitionConfiguration
+	operation migrator.BalanceType
 }
 
 func (m *MigratorNode) downgradeAllReplicaToSecondary(client *executor.Client) {
