@@ -3,6 +3,8 @@ package nodesmigrator
 import (
 	"fmt"
 	"math"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/XiaoMi/pegasus-go-client/idl/replication"
@@ -159,9 +161,78 @@ func (m *Migrator) getValidOriginNodes(target *MigratorNode) []*MigratorNode {
 	return validOriginNodes
 }
 
-func (m *Migrator) submitMigrateTaskAndWait(client *executor.Client, table string, origins []*MigratorNode,
-	target *MigratorNode, maxConcurrentCount int) {
-	//todo
+var migrateActions = MigrateActions{actionList: map[string]*Action{}}
+
+func (m *Migrator) submitMigrateTaskAndWait(client *executor.Client, table string, origins []*MigratorNode, target *MigratorNode, maxConcurrentCount int) {
+	var wg sync.WaitGroup
+	wg.Add(maxConcurrentCount)
+	for maxConcurrentCount > 0 {
+		go func(to *MigratorNode) {
+			m.migrateAndWaitComplete(client, table, origins, target)
+			wg.Done()
+		}(target)
+		maxConcurrentCount--
+	}
+	fmt.Printf("INFO: [%s]async migrate task call complete, wait all works successfully\n", table)
+	wg.Wait()
+	fmt.Printf("INFO: [%s]all works successfully\n\n", table)
+}
+
+func (m *Migrator) migrateAndWaitComplete(client *executor.Client, table string, origins []*MigratorNode, target *MigratorNode) {
+	from := origins[getFromNodeIndex(int32(len(origins)))]
+	if len(from.replicas) == 0 {
+		fmt.Printf("WARN: the pegasusNode[%s] has no replica to migrate\n", target.node.String())
+		return
+	}
+
+	var action *Action
+	for _, replica := range from.replicas {
+		action = &Action{
+			replica: replica,
+			from:    from,
+			to:      target,
+		}
+
+		if target.contain(replica.part.Pid) {
+			fmt.Printf("WARN: actions[%s] target has existed the replica, will retry next replica\n", action.toString())
+			continue
+		}
+
+		if !migrateActions.put(action) {
+			fmt.Printf("WARN: the replica move to target of actions[%s] has assgin other task, will retry next replica\n", action.toString())
+			continue
+		}
+		m.executeMigrateAction(client, action, table)
+		if action.replica.operation == migrator.BalanceCopyPri {
+			target.downgradeOneReplicaToSecondary(client, table, action.replica.part.Pid)
+		}
+		fmt.Printf("INFO: migrate complete, action: %s\n", action.toString())
+		return
+	}
+}
+
+func (m *Migrator) executeMigrateAction(client *executor.Client, action *Action, table string) {
+	for {
+		if !m.nodes[action.from.node.String()].contain(action.replica.part.Pid) {
+			fmt.Printf("WARN: origin has no the replica[%s], break the task\n", action.toString())
+			return
+		}
+
+		if m.nodes[action.to.node.String()].contain(action.replica.part.Pid) {
+			fmt.Printf("WARN: target has existed the replica[%s], break the task\n", action.toString())
+			return
+		}
+
+		err := client.Meta.Balance(action.replica.part.Pid, action.replica.operation, action.from.node, action.to.node)
+		if err != nil {
+			fmt.Printf("WARN: wait, migrate action[%s] now is invalid: %s\n", action.toString(), err.Error())
+			time.Sleep(10 * time.Second)
+			continue
+		}
+
+		fmt.Printf("WARN: wait action %s\n", action.toString())
+		time.Sleep(10 * time.Second)
+	}
 }
 
 func createNewMigrator(client *executor.Client, from []string, to []string) (*Migrator, error) {
@@ -171,7 +242,6 @@ func createNewMigrator(client *executor.Client, from []string, to []string) (*Mi
 	}
 
 	return &Migrator{
-		nodes:   make(map[string]*MigratorNode),
 		origins: origins,
 		targets: targets,
 	}, nil
@@ -202,4 +272,10 @@ func convert(client *executor.Client, nodes []string) ([]*util.PegasusNode, erro
 		return nil, fmt.Errorf("invalid nodes list")
 	}
 	return pegasusNodes, nil
+}
+
+var hash int32
+
+func getFromNodeIndex(count int32) int32 {
+	return atomic.AddInt32(&hash, 1) % count
 }
