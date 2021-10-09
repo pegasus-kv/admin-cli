@@ -21,52 +21,6 @@ type Replica struct {
 	operation migrator.BalanceType
 }
 
-func (m *MigratorNode) downgradeOneReplicaToSecondary(client *executor.Client, table string, gpid *base.Gpid) {
-	for {
-		if !m.contain(gpid) {
-			fmt.Printf("ERROR: can't find replica[%s] on node[%s]\n", gpid.String(), m.node.String())
-			time.Sleep(10 * time.Second)
-			continue
-		}
-
-		resp, err := client.Meta.QueryConfig(table)
-		if err != nil {
-			fmt.Printf("WARN: wait, query config table[%s] for gpid[%s] now is invalid: %s\n", table, gpid.String(), err.Error())
-			time.Sleep(10 * time.Second)
-			continue
-		}
-
-		var selectReplica *replication.PartitionConfiguration
-		for _, partition := range resp.Partitions {
-			if partition.Pid.String() != gpid.String() {
-				continue
-			} else {
-				selectReplica = partition
-				break
-			}
-		}
-
-		if selectReplica == nil {
-			fmt.Printf("ERROR: can't find replica[%s] of table[%s]\n", gpid.String(), table)
-			continue
-		}
-
-		if selectReplica.Primary.GetAddress() == m.node.TCPAddr() {
-			secondaryNode := client.Nodes.MustGetReplica(selectReplica.Secondaries[0].GetAddress())
-			err = client.Meta.Balance(gpid, migrator.BalanceMovePri, m.node, secondaryNode)
-			if err != nil {
-				fmt.Printf("WARN: wait, downgrade[%s] to secondary now is invalid: %s\n", gpid.String(), err.Error())
-				time.Sleep(10 * time.Second)
-				continue
-			}
-		} else {
-			fmt.Printf("WARN: replica[%s] has been secondary on node[%s]\n", gpid.String(), m.node.String())
-			return
-		}
-
-	}
-}
-
 func (m *MigratorNode) downgradeAllReplicaToSecondary(client *executor.Client) {
 	if m.checkIfNoPrimary(client) {
 		return
@@ -111,6 +65,52 @@ func (m *MigratorNode) checkIfNoPrimary(client *executor.Client) bool {
 
 	fmt.Printf("INFO: migrate primary out of %s successfully\n", m.String())
 	return true
+}
+
+func (m *MigratorNode) downgradeOneReplicaToSecondary(client *executor.Client, table string, gpid *base.Gpid) {
+	for {
+		if !m.contain(gpid) {
+			fmt.Printf("ERROR: can't find replica[%s] on node[%s]\n", gpid.String(), m.node.String())
+			time.Sleep(10 * time.Second)
+			continue
+		}
+
+		resp, err := client.Meta.QueryConfig(table)
+		if err != nil {
+			fmt.Printf("WARN: wait, query config table[%s] for gpid[%s] now is invalid: %s\n", table, gpid.String(), err.Error())
+			time.Sleep(10 * time.Second)
+			continue
+		}
+
+		var selectReplica *replication.PartitionConfiguration
+		for _, partition := range resp.Partitions {
+			if partition.Pid.String() != gpid.String() {
+				continue
+			} else {
+				selectReplica = partition
+				break
+			}
+		}
+
+		if selectReplica == nil {
+			fmt.Printf("ERROR: can't find replica[%s] of table[%s]\n", gpid.String(), table)
+			continue
+		}
+
+		if selectReplica.Primary.GetAddress() == m.node.TCPAddr() {
+			secondaryNode := client.Nodes.MustGetReplica(selectReplica.Secondaries[0].GetAddress())
+			err = client.Meta.Balance(gpid, migrator.BalanceMovePri, m.node, secondaryNode)
+			if err != nil {
+				fmt.Printf("WARN: wait, downgrade[%s] to secondary now is invalid: %s\n", gpid.String(), err.Error())
+				time.Sleep(10 * time.Second)
+				continue
+			}
+		} else {
+			fmt.Printf("WARN: replica[%s] has been secondary on node[%s]\n", gpid.String(), m.node.String())
+			return
+		}
+
+	}
 }
 
 func (m *MigratorNode) contain(gpid *base.Gpid) bool {
