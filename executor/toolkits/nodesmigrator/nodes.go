@@ -60,7 +60,7 @@ func (m *MigratorNode) downgradeOneReplicaToSecondary(client *executor.Client, t
 				continue
 			}
 		} else {
-			fmt.Printf("WARN: currnet replica[%s] has been secondary on node[%s]\n", gpid.String(), m.node.String())
+			fmt.Printf("WARN: replica[%s] has been secondary on node[%s]\n", gpid.String(), m.node.String())
 			return
 		}
 

@@ -201,7 +201,7 @@ func (m *Migrator) sendMigrateRequest(client *executor.Client, table string, ori
 		}
 
 		if m.ongoingActions.exist(action) {
-			fmt.Printf("WARN: the replica move to target of action[%s] has assgin other task, will retry next replica\n", action.toString())
+			fmt.Printf("WARN: action[%s] has assgin other task, will retry next replica\n", action.toString())
 			continue
 		}
 
@@ -228,7 +228,7 @@ func (m *Migrator) updateOngoingActionList(client *executor.Client, table string
 	for name, act := range m.ongoingActions.actionList {
 		node := m.nodes[act.to.String()]
 		if node.contain(act.replica.gpid) {
-			fmt.Printf("INFO: %s has completed, delete it from the actions list and assign the primary to secondary\n", name)
+			fmt.Printf("INFO: %s has completed, delete it and assign to secondary\n", name)
 			m.ongoingActions.delete(act)
 			node.downgradeOneReplicaToSecondary(client, table, act.replica.gpid)
 		} else {
