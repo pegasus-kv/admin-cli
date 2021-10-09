@@ -17,8 +17,7 @@ type MigratorNode struct {
 }
 
 type Replica struct {
-	// todo: for ci pass, the variable is necessary in later pr
-	part      *replication.PartitionConfiguration
+	gpid      *base.Gpid
 	operation migrator.BalanceType
 }
 
@@ -69,16 +68,20 @@ func (m *MigratorNode) downgradeOneReplicaToSecondary(client *executor.Client, t
 }
 
 func (m *MigratorNode) downgradeAllReplicaToSecondary(client *executor.Client) {
+	if m.checkIfNoPrimary(client) {
+		return
+	}
+
 	for {
 		err := migrator.MigratePrimariesOut(client.Meta, m.node)
 		if err != nil {
-			fmt.Printf("WARN: wait, migrate primary out of %s is invalid now, err = %s\n", m.String(), err)
-			time.Sleep(30 * time.Second)
+			fmt.Printf("WARN: migrate primary out of %s is invalid now, err = %s\n", m.String(), err)
+			time.Sleep(10 * time.Second)
 			continue
 		}
 
 		for {
-			time.Sleep(30 * time.Second)
+			time.Sleep(10 * time.Second)
 			if !m.checkIfNoPrimary(client) {
 				continue
 			}
@@ -90,14 +93,14 @@ func (m *MigratorNode) downgradeAllReplicaToSecondary(client *executor.Client) {
 func (m *MigratorNode) checkIfNoPrimary(client *executor.Client) bool {
 	tables, err := client.Meta.ListAvailableApps()
 	if err != nil {
-		fmt.Printf("WARN: wait, migrate primary out of %s is invalid when list app, err = %s\n", m.String(), err)
+		fmt.Printf("WARN: migrate primary out of %s is invalid when list app, err = %s\n", m.String(), err)
 		return false
 	}
 
 	for _, tb := range tables {
 		partitions, err := migrator.ListPrimariesOnNode(client.Meta, m.node, tb.AppName)
 		if err != nil {
-			fmt.Printf("WARN: wait, migrate primary out of %s is invalid when list primaries, err = %s\n", m.String(), err)
+			fmt.Printf("WARN: migrate primary out of %s is invalid when list primaries, err = %s\n", m.String(), err)
 			return false
 		}
 		if len(partitions) > 0 {
@@ -112,7 +115,7 @@ func (m *MigratorNode) checkIfNoPrimary(client *executor.Client) bool {
 
 func (m *MigratorNode) contain(gpid *base.Gpid) bool {
 	for _, replica := range m.replicas {
-		if replica.part.Pid.String() == gpid.String() {
+		if replica.gpid.String() == gpid.String() {
 			return true
 		}
 	}

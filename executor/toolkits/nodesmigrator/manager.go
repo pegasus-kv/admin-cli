@@ -9,7 +9,7 @@ import (
 	"github.com/pegasus-kv/admin-cli/executor"
 )
 
-func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []string) error {
+func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []string, concurrent int) error {
 	nodesMigrator, err := createNewMigrator(client, from, to)
 	if err != nil {
 		return err
@@ -34,7 +34,7 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 
 		totalRemainingReplica = 0
 		for _, tb := range tables {
-			remainingCount := nodesMigrator.run(client, tb.AppName, round, currentTargetNode)
+			remainingCount := nodesMigrator.run(client, tb.AppName, round, currentTargetNode, concurrent)
 			totalRemainingReplica = totalRemainingReplica + remainingCount
 		}
 		time.Sleep(10 * time.Second)
