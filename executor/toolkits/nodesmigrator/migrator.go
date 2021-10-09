@@ -165,9 +165,7 @@ func (m *Migrator) getValidOriginNodes(target *MigratorNode) []*MigratorNode {
 	return validOriginNodes
 }
 
-func (m *Migrator) submitMigrateTask(client *executor.Client, table string, origins []*MigratorNode, target *MigratorNode, maxConcurrentCount int) {
-	concurrentCount := maxConcurrentCount - len(m.ongoingActions.actionList)
-
+func (m *Migrator) submitMigrateTask(client *executor.Client, table string, origins []*MigratorNode, target *MigratorNode, concurrentCount int) {
 	var wg sync.WaitGroup
 	wg.Add(concurrentCount)
 	for concurrentCount > 0 {
