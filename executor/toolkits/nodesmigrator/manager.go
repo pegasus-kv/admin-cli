@@ -28,21 +28,28 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 		}
 	}
 
-	var totalRemainingReplica = math.MaxInt16
-	var round = 0
+	origin := nodesMigrator.selectOneOriginNode()
+	firstOrigin := origin
+	totalRemainingReplica := math.MaxInt16
+	round := -1
 	for {
 		if totalRemainingReplica <= 0 {
 			fmt.Printf("INFO: completed for all the targets has migrate\n")
 			return executor.ListNodes(client)
 		}
-		fmt.Printf("\n\n********[%d]start migrate replicas, remainingReplica=%d******\n", round, totalRemainingReplica)
+
+		if origin.String() == firstOrigin.String() {
+			round++
+		}
+		fmt.Printf("\n\n********[%d:%s]start migrate replicas, remainingReplica=%d******\n", round, origin.String(), totalRemainingReplica)
+		origin.downgradeAllReplicaToSecondary(client)
 
 		totalRemainingReplica = 0
 		for _, tb := range tableList {
-			remainingCount := nodesMigrator.run(client, tb, round, concurrent)
+			remainingCount := nodesMigrator.run(client, tb, round, origin, concurrent)
 			totalRemainingReplica = totalRemainingReplica + remainingCount
 		}
-		round++
+		origin = nodesMigrator.selectOneOriginNode()
 		time.Sleep(10 * time.Second)
 	}
 }

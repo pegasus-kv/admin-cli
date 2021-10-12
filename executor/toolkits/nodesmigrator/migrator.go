@@ -12,6 +12,7 @@ import (
 	migrator "github.com/pegasus-kv/admin-cli/client"
 	"github.com/pegasus-kv/admin-cli/executor"
 	"github.com/pegasus-kv/admin-cli/util"
+	"github.com/sirupsen/logrus"
 )
 
 type Migrator struct {
@@ -22,9 +23,9 @@ type Migrator struct {
 	targets []*util.PegasusNode
 }
 
-func (m *Migrator) run(client *executor.Client, table string, round int, maxConcurrent int) int {
+func (m *Migrator) run(client *executor.Client, table string, round int, origin *MigratorNode, maxConcurrent int) int {
 	for {
-		target := m.getOneTargetNode()
+		target := m.selectOneTargetNode()
 		m.updateNodesReplicaInfo(client, table)
 		m.updateOngoingActionList(client, table)
 		remainingCount := m.getRemainingReplicaCount()
@@ -33,18 +34,17 @@ func (m *Migrator) run(client *executor.Client, table string, round int, maxConc
 			return remainingCount
 		}
 
-		validOriginNodes := m.getValidOriginNodes(target)
-		if len(validOriginNodes) == 0 {
-			fmt.Printf("INFO: [%s]no valid replicas can be migratede\n", table)
-			return remainingCount
-		}
-
 		expectCount := m.getExpectReplicaCount(round)
 		currentCount := m.getCurrentReplicaCount(target)
-		if currentCount == expectCount {
+		if currentCount >= expectCount {
 			fmt.Printf("INFO: [%s]balance: no need migrate replicas to %s, current=%d, expect=max(%d)\n",
 				table, target.String(), currentCount, expectCount)
-			return remainingCount
+			continue
+		}
+
+		if !m.existValidReplica(origin, target) {
+			fmt.Printf("INFO: [%s]no valid replicas can be migrate %s=>%s \n", table, origin.String(), target.String())
+			continue
 		}
 
 		currentConcurrentCount := target.concurrent(m.ongoingActions)
@@ -55,14 +55,23 @@ func (m *Migrator) run(client *executor.Client, table string, round int, maxConc
 		}
 
 		concurrent := int(math.Min(float64(maxConcurrent-target.concurrent(m.ongoingActions)), float64(expectCount-currentCount)))
-		m.submitMigrateTask(client, table, validOriginNodes, target, concurrent)
+		m.submitMigrateTask(client, table, origin, target, concurrent)
+		fmt.Printf("INFO: [%s]send %s migrate task completed, current concurrent count = %d\n", table, target.String(),
+			target.concurrent(m.ongoingActions))
 		time.Sleep(10 * time.Second)
 	}
 }
 
-var targetIndex int32
+var originIndex int32 = -1
 
-func (m *Migrator) getOneTargetNode() *MigratorNode {
+func (m *Migrator) selectOneOriginNode() *MigratorNode {
+	currentOriginNode := m.origins[int(atomic.AddInt32(&originIndex, 1))%len(m.origins)]
+	return &MigratorNode{node: currentOriginNode}
+}
+
+var targetIndex int32 = -1
+
+func (m *Migrator) selectOneTargetNode() *MigratorNode {
 	currentTargetNode := m.targets[int(atomic.AddInt32(&targetIndex, 1))%len(m.targets)]
 	return &MigratorNode{node: currentTargetNode}
 }
@@ -159,49 +168,45 @@ func (m *Migrator) getExpectReplicaCount(round int) int {
 	return (totalReplicaCount / len(m.targets)) + round
 }
 
-func (m *Migrator) getValidOriginNodes(target *MigratorNode) []*MigratorNode {
+func (m *Migrator) existValidReplica(origin *MigratorNode, target *MigratorNode) bool {
+	originMigrateNode := m.nodes[origin.String()]
 	targetMigrateNode := m.nodes[target.String()]
-	var validOriginNodes []*MigratorNode
-	for _, origin := range m.origins {
-		originMigrateNode := m.nodes[origin.String()]
-		for _, replica := range originMigrateNode.replicas {
-			if !targetMigrateNode.contain(replica.gpid) {
-				validOriginNodes = append(validOriginNodes, originMigrateNode)
-				break
-			}
+	for _, replica := range originMigrateNode.replicas {
+		if !targetMigrateNode.contain(replica.gpid) {
+			return true
 		}
 	}
-	return validOriginNodes
+
+	return false
 }
 
-func (m *Migrator) submitMigrateTask(client *executor.Client, table string, origins []*MigratorNode, target *MigratorNode, concurrentCount int) {
+func (m *Migrator) submitMigrateTask(client *executor.Client, table string, origin *MigratorNode, target *MigratorNode, concurrentCount int) {
 	var wg sync.WaitGroup
 	wg.Add(concurrentCount)
 	for concurrentCount > 0 {
 		go func(to *MigratorNode) {
-			m.sendMigrateRequest(client, table, origins, target)
+			m.sendMigrateRequest(client, table, origin, target)
 			wg.Done()
 		}(target)
 		concurrentCount--
 	}
 	wg.Wait()
-	fmt.Printf("INFO: [%s]async migrate task send completed, wait all works successfully\n", table)
 }
 
-func (m *Migrator) sendMigrateRequest(client *executor.Client, table string, origins []*MigratorNode, target *MigratorNode) {
-	from := m.nodes[origins[getFromNodeIndex(int32(len(origins)))].String()]
+func (m *Migrator) sendMigrateRequest(client *executor.Client, table string, origin *MigratorNode, target *MigratorNode) {
+	from := m.nodes[origin.String()]
 	to := m.nodes[target.String()]
 	if len(from.replicas) == 0 {
 		fmt.Printf("WARN: the node[%s] has no replica to migrate\n", target.node.String())
 		return
 	}
 
+	if from.primaryCount() != 0 {
+		logrus.Panicf("FATAL: the origin[%s] should not exist primary replica\n", target.node.String())
+	}
+
 	var action *Action
-	secondaryCount := from.secondaryCount()
 	for _, replica := range from.replicas {
-		if secondaryCount != 0 && replica.operation == migrator.BalanceCopyPri {
-			fmt.Printf("[%s]seconsary count = %d, select next replica", replica.String(), secondaryCount)
-		}
 		action = &Action{
 			replica: replica,
 			from:    from,
@@ -291,10 +296,4 @@ func convert(client *executor.Client, nodes []string) ([]*util.PegasusNode, erro
 		return nil, fmt.Errorf("invalid nodes list")
 	}
 	return pegasusNodes, nil
-}
-
-var hash int32
-
-func getFromNodeIndex(count int32) int32 {
-	return atomic.AddInt32(&hash, 1) % count
 }
