@@ -22,8 +22,9 @@ type Migrator struct {
 	targets []*util.PegasusNode
 }
 
-func (m *Migrator) run(client *executor.Client, table string, round int, target *MigratorNode, concurrent int) int {
+func (m *Migrator) run(client *executor.Client, table string, round int, maxConcurrent int) int {
 	for {
+		target := m.getOneTargetNode()
 		m.updateNodesReplicaInfo(client, table)
 		m.updateOngoingActionList(client, table)
 		remainingCount := m.getRemainingReplicaCount()
@@ -40,24 +41,30 @@ func (m *Migrator) run(client *executor.Client, table string, round int, target 
 
 		expectCount := m.getExpectReplicaCount(round)
 		currentCount := m.getCurrentReplicaCount(target)
-		if currentCount >= expectCount {
+		if currentCount == expectCount {
 			fmt.Printf("INFO: [%s]balance: no need migrate replicas to %s, current=%d, expect=max(%d)\n",
 				table, target.String(), currentCount, expectCount)
 			return remainingCount
 		}
-                		fmt.Printf("INFO: [%s]need migrate replicas to %s, current=%d, expect=max(%d)\n",
-			table, target.String(), currentCount, expectCount)
 
-		maxConcurrentCount := int(math.Min(float64(concurrent-len(m.ongoingActions.actionList)), float64(expectCount-currentCount)))
-		m.submitMigrateTask(client, table, validOriginNodes, target, maxConcurrentCount)
+		currentConcurrentCount := target.concurrent(m.ongoingActions)
+		if currentConcurrentCount == maxConcurrent {
+			fmt.Printf("INFO: [%s] %s has excceed the max concurrent max = %d\n", table, target.String(),
+				currentConcurrentCount)
+			continue
+		}
+
+		concurrent := int(math.Min(float64(maxConcurrent-target.concurrent(m.ongoingActions)), float64(expectCount-currentCount)))
+		m.submitMigrateTask(client, table, validOriginNodes, target, concurrent)
 		time.Sleep(10 * time.Second)
 	}
 }
 
-func (m *Migrator) getCurrentTargetNode(index int) (int, *MigratorNode) {
-	round := index/len(m.targets) + 1
-	currentTargetNode := m.targets[index%len(m.targets)]
-	return round, &MigratorNode{node: currentTargetNode}
+var targetIndex int32
+
+func (m *Migrator) getOneTargetNode() *MigratorNode {
+	currentTargetNode := m.targets[int(atomic.AddInt32(&targetIndex, 1))%len(m.targets)]
+	return &MigratorNode{node: currentTargetNode}
 }
 
 func (m *Migrator) updateNodesReplicaInfo(client *executor.Client, table string) {
@@ -149,7 +156,7 @@ func (m *Migrator) getExpectReplicaCount(round int) int {
 	for _, node := range m.nodes {
 		totalReplicaCount = totalReplicaCount + len(node.replicas)
 	}
-	return (totalReplicaCount / len(m.targets)) + round - 1
+	return (totalReplicaCount / len(m.targets)) + round
 }
 
 func (m *Migrator) getValidOriginNodes(target *MigratorNode) []*MigratorNode {
@@ -190,7 +197,11 @@ func (m *Migrator) sendMigrateRequest(client *executor.Client, table string, ori
 	}
 
 	var action *Action
+	secondaryCount := from.secondaryCount()
 	for _, replica := range from.replicas {
+		if secondaryCount != 0 && replica.operation == migrator.BalanceCopyPri {
+			fmt.Printf("[%s]seconsary count = %d, select next replica", replica.String(), secondaryCount)
+		}
 		action = &Action{
 			replica: replica,
 			from:    from,
@@ -230,9 +241,8 @@ func (m *Migrator) updateOngoingActionList(client *executor.Client, table string
 	for name, act := range m.ongoingActions.actionList {
 		node := m.nodes[act.to.String()]
 		if node.contain(act.replica.gpid) {
-			fmt.Printf("INFO: %s has completed, delete it and assign to secondary\n", name)
+			fmt.Printf("INFO: %s has completed, delete it\n", name)
 			m.ongoingActions.delete(act)
-	//		node.downgradeOneReplicaToSecondary(client, table, act.replica.gpid)
 		} else {
 			fmt.Printf("INFO: %s is running, please wait\n", name)
 		}

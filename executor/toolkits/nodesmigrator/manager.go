@@ -9,38 +9,40 @@ import (
 	"github.com/pegasus-kv/admin-cli/executor"
 )
 
-func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []string, concurrent int) error {
+func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []string, tables []string, concurrent int) error {
 	nodesMigrator, err := createNewMigrator(client, from, to)
 	if err != nil {
 		return err
 	}
-	tables, err := client.Meta.ListApps(admin.AppStatus_AS_AVAILABLE)
-	if err != nil {
-		return fmt.Errorf("list app failed: %s", err.Error())
+
+	var tableList []string
+	if len(tables) != 0 && tables[0] != "" {
+		tableList = tables
+	} else {
+		tbs, err := client.Meta.ListApps(admin.AppStatus_AS_AVAILABLE)
+		for _, tb := range tbs {
+			tableList = append(tableList, tb.AppName)
+		}
+		if err != nil {
+			return fmt.Errorf("list app failed: %s", err.Error())
+		}
 	}
 
-	var targetIndex = -1
 	var totalRemainingReplica = math.MaxInt16
+	var round = 0
 	for {
 		if totalRemainingReplica <= 0 {
 			fmt.Printf("INFO: completed for all the targets has migrate\n")
 			return executor.ListNodes(client)
 		}
-		targetIndex++
-		round, currentTargetNode := nodesMigrator.getCurrentTargetNode(targetIndex)
-		fmt.Printf("\n\n********[%d]start migrate replicas to %s******\n", round, currentTargetNode.String())
-		fmt.Printf("INFO: migrate out all primary from current node %s\n", currentTargetNode.String())
-		currentTargetNode.downgradeAllReplicaToSecondary(client)
+		fmt.Printf("\n\n********[%d]start migrate replicas, remainingReplica=%d******\n", round, totalRemainingReplica)
 
 		totalRemainingReplica = 0
-		for _, tb := range tables {
-                        if tb.AppID != 35 && tb.AppID != 36 && tb.AppID != 39 {
-				fmt.Printf("%d|%s break \n", tb.AppID, tb.AppName)
-				continue
-			}
-			remainingCount := nodesMigrator.run(client, tb.AppName, round, currentTargetNode, concurrent)
+		for _, tb := range tableList {
+			remainingCount := nodesMigrator.run(client, tb, round, concurrent)
 			totalRemainingReplica = totalRemainingReplica + remainingCount
 		}
+		round++
 		time.Sleep(10 * time.Second)
 	}
 }

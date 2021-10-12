@@ -51,6 +51,21 @@ func (acts *MigrateActions) delete(currentAction *Action) {
 	delete(acts.actionList, currentAction.toString())
 }
 
+func (acts *MigrateActions) getConcurrent(node *MigratorNode) int {
+	migrateActionsMu.Lock()
+	defer func() {
+		migrateActionsMu.Unlock()
+	}()
+
+	var count = 0
+	for _, act := range acts.actionList {
+		if act.to.node.String() == node.String() {
+			count++
+		}
+	}
+	return count
+}
+
 func (act *Action) toString() string {
 	return fmt.Sprintf("[%s]%s:%s=>%s", act.replica.operation.String(), act.replica.gpid.String(),
 		act.from.node.String(), act.to.node.String())
