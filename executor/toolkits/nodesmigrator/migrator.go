@@ -45,6 +45,8 @@ func (m *Migrator) run(client *executor.Client, table string, round int, target 
 				table, target.String(), currentCount, expectCount)
 			return remainingCount
 		}
+                		fmt.Printf("INFO: [%s]need migrate replicas to %s, current=%d, expect=max(%d)\n",
+			table, target.String(), currentCount, expectCount)
 
 		maxConcurrentCount := int(math.Min(float64(concurrent-len(m.ongoingActions.actionList)), float64(expectCount-currentCount)))
 		m.submitMigrateTask(client, table, validOriginNodes, target, maxConcurrentCount)
@@ -147,7 +149,7 @@ func (m *Migrator) getExpectReplicaCount(round int) int {
 	for _, node := range m.nodes {
 		totalReplicaCount = totalReplicaCount + len(node.replicas)
 	}
-	return (totalReplicaCount / len(m.targets)) + round
+	return (totalReplicaCount / len(m.targets)) + round - 1
 }
 
 func (m *Migrator) getValidOriginNodes(target *MigratorNode) []*MigratorNode {
@@ -230,7 +232,7 @@ func (m *Migrator) updateOngoingActionList(client *executor.Client, table string
 		if node.contain(act.replica.gpid) {
 			fmt.Printf("INFO: %s has completed, delete it and assign to secondary\n", name)
 			m.ongoingActions.delete(act)
-			node.downgradeOneReplicaToSecondary(client, table, act.replica.gpid)
+	//		node.downgradeOneReplicaToSecondary(client, table, act.replica.gpid)
 		} else {
 			fmt.Printf("INFO: %s is running, please wait\n", name)
 		}

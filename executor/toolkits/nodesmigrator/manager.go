@@ -34,6 +34,10 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 
 		totalRemainingReplica = 0
 		for _, tb := range tables {
+                        if tb.AppID != 35 && tb.AppID != 36 && tb.AppID != 39 {
+				fmt.Printf("%d|%s break \n", tb.AppID, tb.AppName)
+				continue
+			}
 			remainingCount := nodesMigrator.run(client, tb.AppName, round, currentTargetNode, concurrent)
 			totalRemainingReplica = totalRemainingReplica + remainingCount
 		}
