@@ -28,10 +28,10 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 		target := m.selectOneTargetNode()
 		m.updateNodesReplicaInfo(client, table)
 		m.updateOngoingActionList(client, table)
-		remainingCount := m.getRemainingReplicaCount()
+		remainingCount := m.getRemainingReplicaCount(origin)
 		if remainingCount <= 0 {
 			fmt.Printf("INFO: [%s]completed for no replicas can be migrated\n", table)
-			return remainingCount
+			return m.getTotalRemainingReplicaCount()
 		}
 
 		expectCount := m.getExpectReplicaCount(round)
@@ -43,13 +43,13 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 		}
 
 		if !m.existValidReplica(origin, target) {
-			fmt.Printf("INFO: [%s]no valid replicas can be migrate %s=>%s \n", table, origin.String(), target.String())
+			fmt.Printf("INFO: [%s]no valid replicas can be migrate to %s \n", table, target.String())
 			continue
 		}
 
 		currentConcurrentCount := target.concurrent(m.ongoingActions)
 		if currentConcurrentCount == maxConcurrent {
-			fmt.Printf("INFO: [%s] %s has excceed the max concurrent max = %d\n", table, target.String(),
+			fmt.Printf("INFO: [%s] %s has excceed the max concurrent = %d\n", table, target.String(),
 				currentConcurrentCount)
 			continue
 		}
@@ -152,7 +152,11 @@ func (m *Migrator) getCurrentReplicaCount(node *MigratorNode) int {
 	return len(m.nodes[node.String()].replicas)
 }
 
-func (m *Migrator) getRemainingReplicaCount() int {
+func (m *Migrator) getRemainingReplicaCount(node *MigratorNode) int {
+	return len(m.nodes[node.String()].replicas)
+}
+
+func (m *Migrator) getTotalRemainingReplicaCount() int {
 	var remainingCount = 0
 	for _, node := range m.origins {
 		remainingCount = remainingCount + len(m.nodes[node.String()].replicas)
