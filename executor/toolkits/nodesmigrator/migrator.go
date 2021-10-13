@@ -36,6 +36,8 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 			return m.getTotalRemainingReplicaCount()
 		}
 
+		//todo(jiashuo): return if ongoing count >= remaining count
+
 		expectCount := m.getExpectReplicaCount(round)
 		currentCount := m.getCurrentReplicaCount(target)
 		if currentCount >= expectCount {

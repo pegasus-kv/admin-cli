@@ -50,6 +50,7 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 			remainingCount := nodesMigrator.run(client, tb, round, origin, concurrent)
 			totalRemainingReplica = totalRemainingReplica + remainingCount
 		}
+		//todo(jiashuo1) select after only all current task has completed
 		origin = nodesMigrator.selectOneOriginNode()
 		time.Sleep(10 * time.Second)
 	}
