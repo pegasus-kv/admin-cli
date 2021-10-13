@@ -28,6 +28,9 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 	invalidTargets := make(map[string]int)
 	for {
 		target := m.selectOneTargetNode()
+		logInfo(fmt.Sprintf("INFO: [%s]send %s migrate task, ongiong task = %d", table, target.String(),
+			target.concurrent(m.ongoingActions)), true)
+
 		m.updateNodesReplicaInfo(client, table)
 		m.updateOngoingActionList()
 		remainingCount := m.getRemainingReplicaCount(origin)
@@ -45,12 +48,13 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 			balanceTargets[target.String()] = 1
 			logInfo(fmt.Sprintf("INFO: [%s]balance: no need migrate replicas to %s, current=%d, expect=max(%d)",
 				table, target.String(), currentCount, expectCount), false)
+			time.Sleep(10 * time.Second)
 			continue
 		}
 
 		if !m.existValidReplica(origin, target) {
 			invalidTargets[target.String()] = 1
-			logInfo(fmt.Sprintf("INFO: [%s]no valid replicas can be migrate to %s", table, target.String()), false)
+			time.Sleep(10 * time.Second)
 			continue
 		}
 
@@ -63,8 +67,6 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 
 		concurrent := int(math.Min(float64(maxConcurrent-target.concurrent(m.ongoingActions)), float64(expectCount-currentCount)))
 		m.submitMigrateTask(client, table, origin, target, concurrent)
-		logInfo(fmt.Sprintf("INFO: [%s]send %s migrate task completed, current concurrent count = %d", table, target.String(),
-			target.concurrent(m.ongoingActions)), true)
 		time.Sleep(10 * time.Second)
 	}
 }
@@ -257,10 +259,8 @@ func (m *Migrator) executeMigrateAction(client *executor.Client, action *Action)
 }
 
 func (m *Migrator) updateOngoingActionList() {
-	logInfo(fmt.Sprintf("DEBUG:check actions %d", len(m.ongoingActions.actionList)), false)
 	for name, act := range m.ongoingActions.actionList {
 		node := m.nodes[act.to.String()]
-		logInfo(fmt.Sprintf("DEBUG:%s check %s", node.String(), name), false)
 		if node.contain(act.replica.gpid) {
 			logInfo(fmt.Sprintf("INFO: %s has completed", name), true)
 			m.ongoingActions.delete(act)

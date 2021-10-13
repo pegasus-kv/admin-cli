@@ -72,7 +72,6 @@ func (m *MigratorNode) checkIfNoPrimary(client *executor.Client) bool {
 
 func (m *MigratorNode) contain(gpid *base.Gpid) bool {
 	for _, replica := range m.replicas {
-		logInfo(fmt.Sprintf("DEBUG: %s => %s vs %s", m.String(), replica.gpid.String(), gpid.String()), false)
 		if replica.gpid.String() == gpid.String() {
 			return true
 		}
