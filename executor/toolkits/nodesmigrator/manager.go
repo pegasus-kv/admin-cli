@@ -34,14 +34,15 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 	round := -1
 	for {
 		if totalRemainingReplica <= 0 {
-			fmt.Printf("INFO: completed for all the targets has migrate\n")
+			logInfo("\n\n==============completed for all origin nodes has been migrated================", true)
 			return executor.ListNodes(client)
 		}
 
 		if origin.String() == firstOrigin.String() {
 			round++
 		}
-		fmt.Printf("\n\n********[%d:%s]start migrate replicas, remainingReplica=%d******\n", round, origin.String(), totalRemainingReplica)
+		logInfo(fmt.Sprintf("\n\n*******************[%d|%s]start migrate replicas, remainingReplica=%d*****************",
+			round, origin.String(), totalRemainingReplica), true)
 		origin.downgradeAllReplicaToSecondary(client)
 
 		totalRemainingReplica = 0
