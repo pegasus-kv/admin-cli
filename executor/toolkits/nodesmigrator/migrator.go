@@ -232,22 +232,23 @@ func (m *Migrator) sendMigrateRequest(client *executor.Client, table string, ori
 		}
 
 		m.ongoingActions.put(action)
-		m.executeMigrateAction(client, action, table)
+		err := m.executeMigrateAction(client, action)
+		if err != nil {
+			m.ongoingActions.delete(action)
+			logWarn(fmt.Sprintf("WARN: send failed: %s", err.Error()), false)
+			continue
+		}
 		logInfo(fmt.Sprintf("INFO: send action: %s", action.toString()), true)
 		return
 	}
 }
 
-func (m *Migrator) executeMigrateAction(client *executor.Client, action *Action, table string) {
-	for {
-		err := client.Meta.Balance(action.replica.gpid, action.replica.operation, action.from.node, action.to.node)
-		if err != nil {
-			logWarn(fmt.Sprintf("WARN: migrate action[%s] now is invalid: %s", action.toString(), err.Error()), false)
-			time.Sleep(10 * time.Second)
-			continue
-		}
-		return
+func (m *Migrator) executeMigrateAction(client *executor.Client, action *Action) error {
+	err := client.Meta.Balance(action.replica.gpid, action.replica.operation, action.from.node, action.to.node)
+	if err != nil {
+		return fmt.Errorf("migrate action[%s] now is invalid: %s", action.toString(), err.Error())
 	}
+	return nil
 }
 
 func (m *Migrator) updateOngoingActionList() {
