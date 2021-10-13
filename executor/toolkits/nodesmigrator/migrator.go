@@ -254,8 +254,10 @@ func (m *Migrator) executeMigrateAction(client *executor.Client, action *Action)
 }
 
 func (m *Migrator) updateOngoingActionList() {
+	logInfo(fmt.Sprintf("DEBUG:check actions %d",len(m.ongoingActions.actionList)), false)
 	for name, act := range m.ongoingActions.actionList {
 		node := m.nodes[act.to.String()]
+		logInfo(fmt.Sprintf("DEBUG:%s check %s",node.String(),  name), false)
 		if node.contain(act.replica.gpid) {
 			logInfo(fmt.Sprintf("INFO: %s has completed", name), true)
 			m.ongoingActions.delete(act)
