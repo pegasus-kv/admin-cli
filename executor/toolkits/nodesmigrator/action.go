@@ -34,7 +34,8 @@ func (acts *MigrateActions) exist(currentAction *Action) bool {
 
 	for _, action := range acts.actionList {
 		if action.replica.gpid.String() == currentAction.replica.gpid.String() {
-			if action.to.node.String() == currentAction.to.node.String() {
+			if action.to.node.String() == currentAction.to.node.String() ||
+				action.from.node.String() == currentAction.from.node.String() {
 				return true
 			}
 		}
