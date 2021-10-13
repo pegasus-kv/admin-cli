@@ -17,23 +17,23 @@ import (
 type Migrator struct {
 	nodes          map[string]*MigratorNode
 	ongoingActions *MigrateActions
-	totalActions *MigrateActions
+	totalActions   *MigrateActions
 
 	origins []*util.PegasusNode
 	targets []*util.PegasusNode
 }
 
 func (m *Migrator) run(client *executor.Client, table string, round int, origin *MigratorNode, maxConcurrent int) int {
-	balanceTargetCount := 0
-	invalidTargetCount := 0
+	balanceTargets := make(map[string]int)
+	invalidTargets := make(map[string]int)
 	for {
 		target := m.selectOneTargetNode()
 		m.updateNodesReplicaInfo(client, table)
 		m.updateOngoingActionList()
 		remainingCount := m.getRemainingReplicaCount(origin)
-		if remainingCount <= 0 || balanceTargetCount == len(m.targets) || invalidTargetCount == len(m.targets) {
+		if remainingCount <= 0 || len(balanceTargets) == len(m.targets) || len(invalidTargets) == len(m.targets) {
 			logInfo(fmt.Sprintf("INFO: [%s]completed(remaining=%d, balance=%v, invalid=%v) for no replicas can be migrated",
-				table, remainingCount, balanceTargetCount == len(m.targets), invalidTargetCount == len(m.targets)), true)
+				table, remainingCount, len(balanceTargets) == len(m.targets), len(invalidTargets) == len(m.targets)), true)
 			return m.getTotalRemainingReplicaCount()
 		}
 
@@ -42,14 +42,14 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 		expectCount := m.getExpectReplicaCount(round)
 		currentCount := m.getCurrentReplicaCount(target)
 		if currentCount >= expectCount {
-			balanceTargetCount++
+			balanceTargets[target.String()] = 1
 			logInfo(fmt.Sprintf("INFO: [%s]balance: no need migrate replicas to %s, current=%d, expect=max(%d)",
 				table, target.String(), currentCount, expectCount), false)
 			continue
 		}
 
 		if !m.existValidReplica(origin, target) {
-			invalidTargetCount++
+			invalidTargets[target.String()] = 1
 			logInfo(fmt.Sprintf("INFO: [%s]no valid replicas can be migrate to %s", table, target.String()), false)
 			continue
 		}
@@ -257,10 +257,10 @@ func (m *Migrator) executeMigrateAction(client *executor.Client, action *Action)
 }
 
 func (m *Migrator) updateOngoingActionList() {
-	logInfo(fmt.Sprintf("DEBUG:check actions %d",len(m.ongoingActions.actionList)), false)
+	logInfo(fmt.Sprintf("DEBUG:check actions %d", len(m.ongoingActions.actionList)), false)
 	for name, act := range m.ongoingActions.actionList {
 		node := m.nodes[act.to.String()]
-		logInfo(fmt.Sprintf("DEBUG:%s check %s",node.String(),  name), false)
+		logInfo(fmt.Sprintf("DEBUG:%s check %s", node.String(), name), false)
 		if node.contain(act.replica.gpid) {
 			logInfo(fmt.Sprintf("INFO: %s has completed", name), true)
 			m.ongoingActions.delete(act)
