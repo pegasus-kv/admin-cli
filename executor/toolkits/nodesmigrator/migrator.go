@@ -24,25 +24,30 @@ type Migrator struct {
 }
 
 func (m *Migrator) run(client *executor.Client, table string, round int, origin *MigratorNode, maxConcurrent int) int {
+	balanceTargetCount := 0
+	invalidTargetCount := 0
 	for {
 		target := m.selectOneTargetNode()
 		m.updateNodesReplicaInfo(client, table)
 		m.updateOngoingActionList(client, table)
 		remainingCount := m.getRemainingReplicaCount(origin)
-		if remainingCount <= 0 {
-			fmt.Printf("INFO: [%s]completed for no replicas can be migrated\n", table)
+		if remainingCount <= 0 || balanceTargetCount == len(m.targets) || invalidTargetCount == len(m.targets) {
+			fmt.Printf("INFO: [%s]completed(remaining=%d, balance=%v, invalid=%v) for no replicas can be migrated\n",
+				table, remainingCount, balanceTargetCount == len(m.targets), invalidTargetCount == len(m.targets))
 			return m.getTotalRemainingReplicaCount()
 		}
 
 		expectCount := m.getExpectReplicaCount(round)
 		currentCount := m.getCurrentReplicaCount(target)
 		if currentCount >= expectCount {
+			balanceTargetCount++
 			fmt.Printf("INFO: [%s]balance: no need migrate replicas to %s, current=%d, expect=max(%d)\n",
 				table, target.String(), currentCount, expectCount)
 			continue
 		}
 
 		if !m.existValidReplica(origin, target) {
+			invalidTargetCount++
 			fmt.Printf("INFO: [%s]no valid replicas can be migrate to %s \n", table, target.String())
 			continue
 		}
@@ -218,12 +223,12 @@ func (m *Migrator) sendMigrateRequest(client *executor.Client, table string, ori
 		}
 
 		if to.contain(replica.gpid) {
-			fmt.Printf("WARN: actions[%s] target has existed the replica, will retry next replica\n", action.toString())
+			fmt.Printf("WARN: actions[%s] target has existed the replica\n", action.toString())
 			continue
 		}
 
 		if m.ongoingActions.exist(action) {
-			fmt.Printf("WARN: action[%s] has assgin other task, will retry next replica\n", action.toString())
+			fmt.Printf("WARN: action[%s] has assgin other task\n", action.toString())
 			continue
 		}
 
