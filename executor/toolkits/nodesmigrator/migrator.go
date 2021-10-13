@@ -17,6 +17,7 @@ import (
 type Migrator struct {
 	nodes          map[string]*MigratorNode
 	ongoingActions *MigrateActions
+	totalActions *MigrateActions
 
 	origins []*util.PegasusNode
 	targets []*util.PegasusNode
@@ -228,14 +229,16 @@ func (m *Migrator) sendMigrateRequest(client *executor.Client, table string, ori
 			continue
 		}
 
-		if m.ongoingActions.exist(action) {
+		if m.totalActions.exist(action) {
 			logWarn(fmt.Sprintf("WARN: action[%s] has assgin other task", action.toString()), false)
 			continue
 		}
 
+		m.totalActions.put(action)
 		m.ongoingActions.put(action)
 		err := m.executeMigrateAction(client, action)
 		if err != nil {
+			m.totalActions.delete(action)
 			m.ongoingActions.delete(action)
 			logWarn(fmt.Sprintf("WARN: send failed: %s", err.Error()), false)
 			continue
@@ -275,6 +278,9 @@ func createNewMigrator(client *executor.Client, from []string, to []string) (*Mi
 
 	return &Migrator{
 		nodes: map[string]*MigratorNode{},
+		totalActions: &MigrateActions{
+			actionList: map[string]*Action{},
+		},
 		ongoingActions: &MigrateActions{
 			actionList: map[string]*Action{},
 		},
