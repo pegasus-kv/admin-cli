@@ -28,9 +28,6 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 	invalidTargets := make(map[string]int)
 	for {
 		target := m.selectOneTargetNode()
-		logInfo(fmt.Sprintf("INFO: [%s]send %s migrate task, ongiong task = %d", table, target.String(),
-			target.concurrent(m.ongoingActions)), true)
-
 		m.updateNodesReplicaInfo(client, table)
 		m.updateOngoingActionList()
 		remainingCount := m.getRemainingReplicaCount(origin)
@@ -62,11 +59,14 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 		if currentConcurrentCount == maxConcurrent {
 			logWarn(fmt.Sprintf("WARN: [%s] %s has excceed the max concurrent = %d", table, target.String(),
 				currentConcurrentCount), true)
+			time.Sleep(10 * time.Second)
 			continue
 		}
 
 		concurrent := int(math.Min(float64(maxConcurrent-target.concurrent(m.ongoingActions)), float64(expectCount-currentCount)))
 		m.submitMigrateTask(client, table, origin, target, concurrent)
+		logInfo(fmt.Sprintf("INFO: [%s]send %s migrate task, ongiong task = %d", table, target.String(),
+			target.concurrent(m.ongoingActions)), true)
 		time.Sleep(10 * time.Second)
 	}
 }
