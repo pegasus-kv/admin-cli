@@ -27,7 +27,7 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 	balanceTargets := make(map[string]int)
 	invalidTargets := make(map[string]int)
 	for {
-		target := m.selectOneTargetNode()
+		target := m.selectNextTargetNode()
 		m.updateNodesReplicaInfo(client, table)
 		m.updateOngoingActionList()
 		remainingCount := m.getRemainingReplicaCount(origin)
@@ -36,8 +36,6 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 				table, remainingCount, len(balanceTargets) == len(m.targets), len(invalidTargets) == len(m.targets)), true)
 			return m.getTotalRemainingReplicaCount()
 		}
-
-		//todo(jiashuo): return if ongoing count >= remaining count
 
 		expectCount := m.getExpectReplicaCount(round)
 		currentCount := m.getCurrentReplicaCount(target)
@@ -73,14 +71,14 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 
 var originIndex int32 = -1
 
-func (m *Migrator) selectOneOriginNode() *MigratorNode {
+func (m *Migrator) selectNextOriginNode() *MigratorNode {
 	currentOriginNode := m.origins[int(atomic.AddInt32(&originIndex, 1))%len(m.origins)]
 	return &MigratorNode{node: currentOriginNode}
 }
 
 var targetIndex int32 = -1
 
-func (m *Migrator) selectOneTargetNode() *MigratorNode {
+func (m *Migrator) selectNextTargetNode() *MigratorNode {
 	currentTargetNode := m.targets[int(atomic.AddInt32(&targetIndex, 1))%len(m.targets)]
 	return &MigratorNode{node: currentTargetNode}
 }

@@ -28,8 +28,8 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 		}
 	}
 
-	origin := nodesMigrator.selectOneOriginNode()
-	firstOrigin := origin
+	currentOriginNode := nodesMigrator.selectNextOriginNode()
+	firstOrigin := currentOriginNode
 	totalRemainingReplica := math.MaxInt16
 	round := -1
 	for {
@@ -38,20 +38,19 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 			return executor.ListNodes(client)
 		}
 
-		if origin.String() == firstOrigin.String() {
+		if currentOriginNode.String() == firstOrigin.String() {
 			round++
 		}
 		logInfo(fmt.Sprintf("\n\n*******************[%d|%s]start migrate replicas, remainingReplica=%d*****************",
-			round, origin.String(), totalRemainingReplica), true)
-		origin.downgradeAllReplicaToSecondary(client)
+			round, currentOriginNode.String(), totalRemainingReplica), true)
+		currentOriginNode.downgradeAllReplicaToSecondary(client)
 
 		totalRemainingReplica = 0
 		for _, tb := range tableList {
-			remainingCount := nodesMigrator.run(client, tb, round, origin, concurrent)
+			remainingCount := nodesMigrator.run(client, tb, round, currentOriginNode, concurrent)
 			totalRemainingReplica = totalRemainingReplica + remainingCount
 		}
-		//todo(jiashuo1) select after only all current task has completed
-		origin = nodesMigrator.selectOneOriginNode()
+		currentOriginNode = nodesMigrator.selectNextOriginNode()
 		time.Sleep(10 * time.Second)
 	}
 }
