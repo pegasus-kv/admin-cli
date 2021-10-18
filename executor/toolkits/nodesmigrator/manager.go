@@ -20,11 +20,11 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 		tableList = tables
 	} else {
 		tbs, err := client.Meta.ListApps(admin.AppStatus_AS_AVAILABLE)
-		for _, tb := range tbs {
-			tableList = append(tableList, tb.AppName)
-		}
 		if err != nil {
 			return fmt.Errorf("list app failed: %s", err.Error())
+		}
+		for _, tb := range tbs {
+			tableList = append(tableList, tb.AppName)
 		}
 	}
 
