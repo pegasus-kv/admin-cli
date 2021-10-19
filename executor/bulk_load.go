@@ -302,7 +302,7 @@ func PrintSingleIngesting(client *Client, resp *admin.QueryBulkLoadResponse, par
 		tbWriter.SetFooter([]string{
 			fmt.Sprintf("Table(%s) Partition[%d]", resp.GetAppName(), partitionIndex),
 			fmt.Sprintf("Table(%s)", resp.GetAppStatus().String()),
-			fmt.Sprintf(""),
+			"",
 		})
 	}).Render()
 }
@@ -362,7 +362,7 @@ func PrintSinglePausing(client *Client, resp *admin.QueryBulkLoadResponse, parti
 		tbWriter.SetFooter([]string{
 			fmt.Sprintf("Table(%s) Partition[%d]", resp.GetAppName(), partitionIndex),
 			fmt.Sprintf("Table(%s)", resp.GetAppStatus().String()),
-			fmt.Sprintf(""),
+			"",
 		})
 	}).Render()
 }
