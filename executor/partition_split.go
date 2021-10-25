@@ -22,11 +22,16 @@ package executor
 import (
 	"fmt"
 
+	"github.com/XiaoMi/pegasus-go-client/idl/radmin"
 	"github.com/pegasus-kv/admin-cli/tabular"
 )
 
 func StartPartitionSplit(client *Client, tableName string, newPartitionCount int) error {
-	err := client.Meta.StartPartitionSplit(tableName, newPartitionCount)
+	err := DiskBeforeSplit(client, tableName)
+	if err != nil {
+		return err
+	}
+	err = client.Meta.StartPartitionSplit(tableName, newPartitionCount)
 	if err != nil {
 		return err
 	}
@@ -110,5 +115,62 @@ func CancelPartitionSplit(client *Client, tableName string, oldPartitionCount in
 		return err
 	}
 	fmt.Printf("Table %s cancel partition split succeed\n", tableName)
+	return nil
+}
+
+type NodeDiskStats struct {
+	NodeAddress     string
+	DiskTag         string
+	DiskCapacity    int64
+	DiskAvailable   int64
+	ReplicaCapacity []ReplicaCapacityStruct
+}
+
+func DiskBeforeSplit(client *Client, tableName string) error {
+	// get node list
+	nodeInfos, err := client.Meta.ListNodes()
+	if err != nil {
+		return fmt.Errorf("%s [hint: failed to list nodes when disk check before split]", err)
+	}
+	// get queryDiskInfoResponse for each node
+	respMap := make(map[string]*radmin.QueryDiskInfoResponse)
+	for _, nodeInfo := range nodeInfos {
+		address := nodeInfo.GetAddress().GetAddress()
+		resp, err := sendQueryDiskInfoRequest(client, address, tableName)
+		if err != nil {
+			return fmt.Errorf("%s [hint: failed to query disk info for node(%s) when disk check before split]", err, address)
+		}
+		respMap[address] = resp
+	}
+	// get NodeDiskStats for the table partition on each disk
+	var nList []NodeDiskStats
+	for address, resp := range respMap {
+		for _, diskInfo := range resp.GetDiskInfos() {
+			diskTag := diskInfo.GetTag()
+			rCapacityList, err := convertReplicaCapacityStruct(queryDiskCapacity(client, address, resp, diskTag, false))
+			if err != nil {
+				return fmt.Errorf("%s [hint: failed to get info for node(%s) disk(%s) when disk check before split]", err, address, diskTag)
+			}
+			nList = append(nList, NodeDiskStats{
+				NodeAddress:     address,
+				DiskTag:         diskTag,
+				DiskCapacity:    diskInfo.GetDiskCapacityMb(),
+				DiskAvailable:   diskInfo.GetDiskAvailableMb(),
+				ReplicaCapacity: rCapacityList,
+			})
+		}
+	}
+	// check disk space before split
+	for _, nodeDiskStats := range nList {
+		var totalSize int64 = 0
+		for _, rCapacity := range nodeDiskStats.ReplicaCapacity {
+			totalSize += rCapacity.Size
+		}
+		diskUsedAfterSplit := totalSize*3 + nodeDiskStats.DiskAvailable
+		diskThreshold := nodeDiskStats.DiskCapacity * 9 / 10
+		if diskUsedAfterSplit > diskThreshold {
+			return fmt.Errorf("disk(%s@%s) doesn't have enough space to execute partition split[after(%v) vs capacity(%v)]", nodeDiskStats.NodeAddress, nodeDiskStats.DiskTag, diskUsedAfterSplit, diskThreshold)
+		}
+	}
 	return nil
 }
