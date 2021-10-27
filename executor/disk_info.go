@@ -80,6 +80,23 @@ func sendQueryDiskInfoRequest(client *Client, replicaServer string, tableName st
 	return resp, err
 }
 
+func QueryAllNodesDiskInfo(client *Client, tableName string) (map[string]*radmin.QueryDiskInfoResponse, error) {
+	respMap := make(map[string]*radmin.QueryDiskInfoResponse)
+	nodeInfos, err := client.Meta.ListNodes()
+	if err != nil {
+		return respMap, err
+	}
+	for _, nodeInfo := range nodeInfos {
+		address := nodeInfo.GetAddress().GetAddress()
+		resp, err := sendQueryDiskInfoRequest(client, address, tableName)
+		if err != nil {
+			return respMap, err
+		}
+		respMap[address] = resp
+	}
+	return respMap, nil
+}
+
 type DiskCapacityStruct struct {
 	Disk     string `json:"disk"`
 	Capacity int64  `json:"capacity"`

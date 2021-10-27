@@ -22,7 +22,6 @@ package executor
 import (
 	"fmt"
 
-	"github.com/XiaoMi/pegasus-go-client/idl/radmin"
 	"github.com/pegasus-kv/admin-cli/tabular"
 )
 
@@ -127,20 +126,10 @@ type NodeDiskStats struct {
 }
 
 func DiskBeforeSplit(client *Client, tableName string) error {
-	// get node list
-	nodeInfos, err := client.Meta.ListNodes()
+	// get queryDiskInfoResponse for all replica nodes
+	respMap, err := QueryAllNodesDiskInfo(client, tableName)
 	if err != nil {
-		return fmt.Errorf("%s [hint: failed to list nodes when disk check before split]", err)
-	}
-	// get queryDiskInfoResponse for each node
-	respMap := make(map[string]*radmin.QueryDiskInfoResponse)
-	for _, nodeInfo := range nodeInfos {
-		address := nodeInfo.GetAddress().GetAddress()
-		resp, err := sendQueryDiskInfoRequest(client, address, tableName)
-		if err != nil {
-			return fmt.Errorf("%s [hint: failed to query disk info for node(%s) when disk check before split]", err, address)
-		}
-		respMap[address] = resp
+		return fmt.Errorf("%s [hint: failed to query disk info when disk check before split]", err)
 	}
 	// get NodeDiskStats for the table partition on each disk
 	var nList []NodeDiskStats
