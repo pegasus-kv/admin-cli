@@ -26,12 +26,10 @@ import (
 )
 
 func StartPartitionSplit(client *Client, tableName string, newPartitionCount int) error {
-	err := DiskBeforeSplit(client, tableName)
-	if err != nil {
+	if err := DiskBeforeSplit(client, tableName); err != nil {
 		return err
 	}
-	err = client.Meta.StartPartitionSplit(tableName, newPartitionCount)
-	if err != nil {
+	if err := client.Meta.StartPartitionSplit(tableName, newPartitionCount); err != nil {
 		return err
 	}
 	fmt.Printf("Table %s start partition split succeed\n", tableName)
