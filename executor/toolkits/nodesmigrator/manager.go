@@ -3,6 +3,8 @@ package nodesmigrator
 import (
 	"fmt"
 	"math"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/XiaoMi/pegasus-go-client/idl/admin"
@@ -30,7 +32,7 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 
 	currentOriginNode := nodesMigrator.selectNextOriginNode()
 	firstOrigin := currentOriginNode
-	totalRemainingReplica := math.MaxInt16
+	var totalRemainingReplica int32 = math.MaxInt32
 	round := -1
 	for {
 		if totalRemainingReplica <= 0 {
@@ -46,9 +48,19 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 		currentOriginNode.downgradeAllReplicaToSecondary(client)
 
 		totalRemainingReplica = 0
+		tableCount := len(tableList)
 		for _, tb := range tableList {
-			remainingCount := nodesMigrator.run(client, tb, round, currentOriginNode, concurrent)
-			totalRemainingReplica = totalRemainingReplica + remainingCount
+			var wg sync.WaitGroup
+			wg.Add(tableCount)
+			for tableCount > 0 {
+				go func() {
+					remainingCount := nodesMigrator.run(client, tb, round, currentOriginNode, concurrent)
+					atomic.AddInt32(&totalRemainingReplica, int32(remainingCount))
+					wg.Done()
+				}()
+				tableCount--
+			}
+			wg.Wait()
 		}
 		currentOriginNode = nodesMigrator.selectNextOriginNode()
 		time.Sleep(10 * time.Second)
