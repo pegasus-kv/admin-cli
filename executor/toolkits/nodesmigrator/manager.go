@@ -52,6 +52,7 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 		var wg sync.WaitGroup
 		wg.Add(tableCount)
 		for _, tb := range tableList {
+			logInfo(fmt.Sprintf("start async submit [%s]\n", tb), true)
 			tb := tb
 			go func() {
 					remainingCount := nodesMigrator.run(client, tb, round, currentOriginNode, concurrent)
