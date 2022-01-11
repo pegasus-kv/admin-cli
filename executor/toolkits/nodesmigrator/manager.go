@@ -53,12 +53,13 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 		wg.Add(tableCount)
 		for _, tb := range tableList {
 			logInfo(fmt.Sprintf("start async submit [%s]\n", tb), true)
-			tb := tb
+			targetTable := tb
 			go func() {
-					remainingCount := nodesMigrator.run(client, tb, round, currentOriginNode, concurrent)
-					atomic.AddInt32(&totalRemainingReplica, int32(remainingCount))
-					wg.Done()
-				}()
+				internal, _ := createNewMigrator(client, from, to)
+				remainingCount := internal.run(client, targetTable, round, currentOriginNode, concurrent)
+				atomic.AddInt32(&totalRemainingReplica, int32(remainingCount))
+				wg.Done()
+			}()
 		}
 		wg.Wait()
 		currentOriginNode = nodesMigrator.selectNextOriginNode()
