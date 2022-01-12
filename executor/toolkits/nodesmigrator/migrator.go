@@ -28,7 +28,7 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 	invalidTargets := make(map[string]int)
 	for {
 		target := m.selectNextTargetNode()
-		logInfo(fmt.Sprintf("try send migrate task to %s", target.String()))
+		logInfo(fmt.Sprintf("[%s]try send migrate task to %s", table, target.String()))
 		m.updateNodesReplicaInfo(client, table)
 		m.updateOngoingActionList()
 		remainingCount := m.getRemainingReplicaCount(origin)
@@ -41,17 +41,21 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 		expectCount := m.getExpectReplicaCount(round)
 		currentCount := m.getCurrentReplicaCount(target)
 		if currentCount >= expectCount {
-			balanceTargets[target.String()] = 1
-			logDebug(fmt.Sprintf("[%s]balance: no need migrate replicas to %s, current=%d, expect=max(%d), total_balance=%d",
-				table, target.String(), currentCount, expectCount, len(balanceTargets)))
+			if _, ok := balanceTargets[target.String()]; !ok {
+				balanceTargets[target.String()] = 1
+				logDebug(fmt.Sprintf("[%s]balance: no need migrate replicas to %s, current=%d, expect=max(%d), total_balance=%d",
+					table, target.String(), currentCount, expectCount, len(balanceTargets)))
+			}
 			time.Sleep(1 * time.Second)
 			continue
 		}
 
 		if !m.existValidReplica(origin, target) {
-			invalidTargets[target.String()] = 1
-			logDebug(fmt.Sprintf("[%s]invalid: no invalid migrate replicas to %s, total_invalid=%d",
-				table, target.String(), len(invalidTargets)))
+			if _, ok := invalidTargets[target.String()]; !ok {
+				invalidTargets[target.String()] = 1
+				logDebug(fmt.Sprintf("[%s]invalid: no invalid migrate replicas to %s, total_invalid=%d",
+					table, target.String(), len(invalidTargets)))
+			}
 			time.Sleep(1 * time.Second)
 			continue
 		}

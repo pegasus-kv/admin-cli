@@ -7,12 +7,12 @@ import (
 )
 
 func logInfo(log string) {
-	fmt.Println(fmt.Sprintf("INFO: %s", log))
+	fmt.Printf("INFO: %s\n", log)
 	logrus.Info(log)
 }
 
 func logWarn(log string) {
-	fmt.Println(fmt.Sprintf("WARN: %s", log))
+	fmt.Printf("WARN: %s\n", log)
 	logrus.Warn(log)
 }
 
