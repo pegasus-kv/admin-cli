@@ -42,7 +42,7 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 		currentCount := m.getCurrentReplicaCount(target)
 		if currentCount >= expectCount {
 			balanceTargets[target.String()] = 1
-			logWarn(fmt.Sprintf("[%s]balance: no need migrate replicas to %s, current=%d, expect=max(%d), total_balance=%d",
+			logDebug(fmt.Sprintf("[%s]balance: no need migrate replicas to %s, current=%d, expect=max(%d), total_balance=%d",
 				table, target.String(), currentCount, expectCount, len(balanceTargets)))
 			time.Sleep(1 * time.Second)
 			continue
@@ -50,7 +50,7 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 
 		if !m.existValidReplica(origin, target) {
 			invalidTargets[target.String()] = 1
-			logWarn(fmt.Sprintf("[%s]invalid: no invalid migrate replicas to %s, total_invalid=%d",
+			logDebug(fmt.Sprintf("[%s]invalid: no invalid migrate replicas to %s, total_invalid=%d",
 				table, target.String(), len(invalidTargets)))
 			time.Sleep(1 * time.Second)
 			continue
