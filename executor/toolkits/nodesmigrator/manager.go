@@ -11,7 +11,7 @@ import (
 	"github.com/pegasus-kv/admin-cli/executor"
 )
 
-func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []string, tables []string, concurrent int) error {
+func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []string, tables []string, batch bool, concurrent int) error {
 	nodesMigrator, err := createNewMigrator(client, from, to)
 	if err != nil {
 		return err
@@ -52,14 +52,19 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 		var wg sync.WaitGroup
 		wg.Add(tableCount)
 		for _, tb := range tableList {
-			logInfo(fmt.Sprintf("INFO: start async submit [%s]", tb), true)
 			targetTable := tb
-			go func() {
-				internal, _ := createNewMigrator(client, from, to)
-				remainingCount := internal.run(client, targetTable, round, currentOriginNode, concurrent)
+			if batch {
+				go func() {
+					worker, _ := createNewMigrator(client, from, to)
+					remainingCount := worker.run(client, targetTable, round, currentOriginNode, concurrent)
+					atomic.AddInt32(&totalRemainingReplica, int32(remainingCount))
+					wg.Done()
+				}()
+			} else {
+				remainingCount := nodesMigrator.run(client, targetTable, round, currentOriginNode, concurrent)
 				atomic.AddInt32(&totalRemainingReplica, int32(remainingCount))
 				wg.Done()
-			}()
+			}
 		}
 		wg.Wait()
 		currentOriginNode = nodesMigrator.selectNextOriginNode()
