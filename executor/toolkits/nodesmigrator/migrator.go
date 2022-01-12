@@ -31,7 +31,7 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 		m.updateNodesReplicaInfo(client, table)
 		m.updateOngoingActionList()
 		remainingCount := m.getRemainingReplicaCount(origin)
-		if remainingCount <= 0 || len(balanceTargets) == len(m.targets) || len(invalidTargets) == len(m.targets) {
+		if remainingCount <= 0 || len(balanceTargets)+len(invalidTargets) >= len(m.targets) {
 			logInfo(fmt.Sprintf("INFO: [%s]completed(remaining=%d, balance=%v, invalid=%v) for no replicas can be migrated",
 				table, remainingCount, len(balanceTargets) == len(m.targets), len(invalidTargets) == len(m.targets)), true)
 			return m.getTotalRemainingReplicaCount()
