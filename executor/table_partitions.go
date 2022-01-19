@@ -33,24 +33,11 @@ type PartitionStruct struct {
 }
 
 // ShowTablePartitions is table-partitions command
-func ShowTablePartitions(client *Client, tableName string) error {
+func GetTablePartitions(client *Client, tableName string) (partitions []PartitionStruct, err error) {
 	resp, err := client.Meta.QueryConfig(tableName)
 	if err != nil {
-		return err
+		return partitions, err
 	}
-
-	nodes, err := getNodesMap(client)
-	if err != nil {
-		return err
-	}
-	nodes, err = fillNodesInfo(nodes, resp.Partitions)
-	if err != nil {
-		return err
-	}
-	fmt.Println("[PartitionCount]")
-	printNodesInfo(client, nodes)
-
-	var partitions []interface{}
 	for _, partition := range resp.Partitions {
 		p := PartitionStruct{}
 		p.Pidx = partition.Pid.PartitionIndex
@@ -68,36 +55,58 @@ func ShowTablePartitions(client *Client, tableName string) error {
 		partitions = append(partitions, p)
 	}
 
-	fmt.Println("[PartitionDistribution]")
-	tabular.Print(client, partitions)
+	return partitions, nil
+}
+
+func ShowPartitionCount(client *Client, tableName string) error {
+	resp, err := client.Meta.QueryConfig(tableName)
+	if err != nil {
+		return err
+	}
+
+	nodes, err := getNodesMap(client)
+	if err != nil {
+		return err
+	}
+	nodes, err = fillNodesInfo(nodes, resp.Partitions)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("[PartitionCount]")
+	printNodesInfo(client, nodes)
+
 	return nil
 }
 
-func ShowTablePartition(client *Client, tableName string, partitionIndex int32) (*PartitionStruct, error) {
-	resp, err := client.Meta.QueryConfig(tableName)
+func ShowTablePartitions(client *Client, tableName string) error {
+
+	if err := ShowPartitionCount(client, tableName); err != nil {
+		return err
+	}
+
+	partitions, err := GetTablePartitions(client, tableName)
+	if err != nil {
+		return err
+	}
+
+	var partitionsInf []interface{}
+	for _, partition := range partitions {
+		partitionsInf = append(partitionsInf, partition)
+	}
+
+	fmt.Println("[PartitionDistribution]")
+	tabular.Print(client, partitionsInf)
+	return nil
+}
+
+func GetTablePartition(client *Client, tableName string, partitionIndex int32) (*PartitionStruct, error) {
+	partitions, err := GetTablePartitions(client, tableName)
 	if err != nil {
 		return nil, err
 	}
-
-	for _, partition := range resp.Partitions {
-		if partition.Pid.PartitionIndex != partitionIndex {
-			continue
-		}
-		p := PartitionStruct{}
-		p.Pidx = partition.Pid.PartitionIndex
-
-		primary := client.Nodes.MustGetReplica(partition.Primary.GetAddress())
-		p.PrimaryAddr = primary.CombinedAddr()
-
-		var secondaries []string
-		for _, sec := range partition.Secondaries {
-			secNode := client.Nodes.MustGetReplica(sec.GetAddress())
-			secondaries = append(secondaries, secNode.CombinedAddr())
-		}
-		p.SecondariesAddr = strings.Join(secondaries, ",")
-
-		return &p, nil
+	if partitionIndex >= int32(len(partitions)) {
+		return nil, fmt.Errorf("Only have %d partitions, but you ask for %d", len(partitions), partitionIndex)
 	}
-
-	return nil, fmt.Errorf("error partitions")
+	return &partitions[partitionIndex], nil
 }
