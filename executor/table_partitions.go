@@ -44,7 +44,7 @@ func ShowTablePartitions(client *Client, tableName string) error {
 	fmt.Println("[PartitionCount]")
 	printNodesInfo(client, nodes)
 
-	type partitionStruct struct {
+	type PartitionStruct struct {
 		Pidx            int32  `json:"pidx"`
 		PrimaryAddr     string `json:"primary"`
 		SecondariesAddr string `json:"secondaries"`
@@ -52,7 +52,7 @@ func ShowTablePartitions(client *Client, tableName string) error {
 
 	var partitions []interface{}
 	for _, partition := range resp.Partitions {
-		p := partitionStruct{}
+		p := PartitionStruct{}
 		p.Pidx = partition.Pid.PartitionIndex
 
 		primary := client.Nodes.MustGetReplica(partition.Primary.GetAddress())
@@ -71,4 +71,39 @@ func ShowTablePartitions(client *Client, tableName string) error {
 	fmt.Println("[PartitionDistribution]")
 	tabular.Print(client, partitions)
 	return nil
+}
+
+type PartitionStruct struct {
+	Pidx            int32  `json:"pidx"`
+	PrimaryAddr     string `json:"primary"`
+	SecondariesAddr string `json:"secondaries"`
+}
+
+func GetNodesInfo(client *Client, tableName string, partitionIndex int32) (*PartitionStruct, error) {
+	resp, err := client.Meta.QueryConfig(tableName)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, partition := range resp.Partitions {
+		if partition.Pid.PartitionIndex != partitionIndex {
+			continue
+		}
+		p := PartitionStruct{}
+		p.Pidx = partition.Pid.PartitionIndex
+
+		primary := client.Nodes.MustGetReplica(partition.Primary.GetAddress())
+		p.PrimaryAddr = primary.CombinedAddr()
+
+		var secondaries []string
+		for _, sec := range partition.Secondaries {
+			secNode := client.Nodes.MustGetReplica(sec.GetAddress())
+			secondaries = append(secondaries, secNode.CombinedAddr())
+		}
+		p.SecondariesAddr = strings.Join(secondaries, ",")
+
+		return &p, nil
+	}
+
+	return nil, fmt.Errorf("error partitions")
 }
