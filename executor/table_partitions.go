@@ -26,6 +26,12 @@ import (
 	"github.com/pegasus-kv/admin-cli/tabular"
 )
 
+type PartitionStruct struct {
+	Pidx            int32  `json:"pidx"`
+	PrimaryAddr     string `json:"primary"`
+	SecondariesAddr string `json:"secondaries"`
+}
+
 // ShowTablePartitions is table-partitions command
 func ShowTablePartitions(client *Client, tableName string) error {
 	resp, err := client.Meta.QueryConfig(tableName)
@@ -43,12 +49,6 @@ func ShowTablePartitions(client *Client, tableName string) error {
 	}
 	fmt.Println("[PartitionCount]")
 	printNodesInfo(client, nodes)
-
-	type PartitionStruct struct {
-		Pidx            int32  `json:"pidx"`
-		PrimaryAddr     string `json:"primary"`
-		SecondariesAddr string `json:"secondaries"`
-	}
 
 	var partitions []interface{}
 	for _, partition := range resp.Partitions {
@@ -73,13 +73,7 @@ func ShowTablePartitions(client *Client, tableName string) error {
 	return nil
 }
 
-type PartitionStruct struct {
-	Pidx            int32  `json:"pidx"`
-	PrimaryAddr     string `json:"primary"`
-	SecondariesAddr string `json:"secondaries"`
-}
-
-func GetNodesInfo(client *Client, tableName string, partitionIndex int32) (*PartitionStruct, error) {
+func ShowTablePartition(client *Client, tableName string, partitionIndex int32) (*PartitionStruct, error) {
 	resp, err := client.Meta.QueryConfig(tableName)
 	if err != nil {
 		return nil, err
