@@ -32,7 +32,6 @@ type PartitionStruct struct {
 	SecondariesAddr string `json:"secondaries"`
 }
 
-// ShowTablePartitions is table-partitions command
 func GetTablePartitions(client *Client, tableName string) (partitions []PartitionStruct, err error) {
 	resp, err := client.Meta.QueryConfig(tableName)
 	if err != nil {
@@ -79,6 +78,7 @@ func ShowPartitionCount(client *Client, tableName string) error {
 	return nil
 }
 
+// ShowTablePartitions is table-partitions command
 func ShowTablePartitions(client *Client, tableName string) error {
 
 	if err := ShowPartitionCount(client, tableName); err != nil {
@@ -106,7 +106,7 @@ func GetTablePartition(client *Client, tableName string, partitionIndex int32) (
 		return nil, err
 	}
 	if partitionIndex >= int32(len(partitions)) {
-		return nil, fmt.Errorf("Only have %d partitions, but you ask for %d", len(partitions), partitionIndex)
+		return nil, fmt.Errorf("only have %d partitions, but you ask for %d", len(partitions), partitionIndex)
 	}
 	return &partitions[partitionIndex], nil
 }
