@@ -36,7 +36,6 @@ func init() {
 	rootCmd.AddCommand(&grumble.Command{
 		Name:  "start",
 		Help:  "start manual compaction for a specific table",
-		Usage: `start <-a|--tableName TABLE_NAME> <-l|--targetLevel TARGET_LEVEL> <-c|--maxConcurrentRunningCount MAX_RUNNING_COUNT> <-b|--bottommostLevelCompaction BOTTOMMOST_LEVEL_COMPACTION>`,
 		Run: func(c *grumble.Context) error {
 			if c.Flags.String("tableName") == "" {
 				return fmt.Errorf("tableName cannot be empty")
@@ -65,7 +64,6 @@ func init() {
 	rootCmd.AddCommand(&grumble.Command{
 		Name:  "query",
 		Help:  "query manual compaction progress for a specific table",
-		Usage: `query <-a|--tableName TABLE_NAME>`,
 		Run: func(c *grumble.Context) error {
 			if c.Flags.String("tableName") == "" {
 				return fmt.Errorf("tableName cannot be empty")
