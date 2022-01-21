@@ -34,8 +34,8 @@ func init() {
 	}
 
 	rootCmd.AddCommand(&grumble.Command{
-		Name:  "start",
-		Help:  "start manual compaction for a specific table",
+		Name: "start",
+		Help: "start manual compaction for a specific table",
 		Run: func(c *grumble.Context) error {
 			if c.Flags.String("tableName") == "" {
 				return fmt.Errorf("tableName cannot be empty")
@@ -62,8 +62,8 @@ func init() {
 	})
 
 	rootCmd.AddCommand(&grumble.Command{
-		Name:  "query",
-		Help:  "query manual compaction progress for a specific table",
+		Name: "query",
+		Help: "query manual compaction progress for a specific table",
 		Run: func(c *grumble.Context) error {
 			if c.Flags.String("tableName") == "" {
 				return fmt.Errorf("tableName cannot be empty")
