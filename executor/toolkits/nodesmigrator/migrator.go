@@ -35,6 +35,7 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 		// such as: A node downgrade it, but when B node downgrade, the A node some replica will be updated
 		if maxConcurrent == 1 {
 			target.downgradeAllReplicaToSecondary(client)
+			origin.downgradeAllReplicaToSecondary(client)
 		}
 
 		m.updateNodesReplicaInfo(client, table)
