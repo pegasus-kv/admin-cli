@@ -28,6 +28,15 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 	invalidTargets := make(map[string]int)
 	for {
 		target := m.selectNextTargetNode()
+		// downgrade will decrease the `read` influence
+		//
+		// when maxConcurrent=1, which means only one target, so we can downgrade it
+		// otherwise, when different target is running, downgrade will result in those target's replica downgrade invalid
+		// such as: A node downgrade it, but when B node downgrade, the A node some replica will be updated
+		if maxConcurrent == 1 {
+			target.downgradeAllReplicaToSecondary(client)
+		}
+
 		m.updateNodesReplicaInfo(client, table)
 		m.updateOngoingActionList()
 		remainingCount := m.getRemainingReplicaCount(origin)
