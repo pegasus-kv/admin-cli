@@ -26,6 +26,7 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 
 	logWarn(fmt.Sprintf("you now migrate to target count assign to be %d in final, " +
 		"please make sure it is ok! sleep 10s and then start", targetCount))
+	time.Sleep(time.Second * 10)
 
 	nodesMigrator, err := createNewMigrator(client, from, to)
 	if err != nil {
