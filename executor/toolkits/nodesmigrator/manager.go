@@ -20,10 +20,11 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 	GlobalBatchTable = batchTable
 	GlobalBatchTarget = batchTarget
 	if len(to) != targetCount {
-		logPanic("please make sure the targets count == `final_target` value")
+		logPanic(fmt.Sprintf("please make sure the targets count == `--final_target` value： %d vs %d", len(to),
+			targetCount))
 	}
 
-	logWarn(fmt.Sprintf("you now migrate to target count will be %d in final, "+
+	logWarn(fmt.Sprintf("you now migrate to target count assign to be %d in final, " +
 		"please make sure it is ok! sleep 10s and then start", targetCount))
 
 	nodesMigrator, err := createNewMigrator(client, from, to)
