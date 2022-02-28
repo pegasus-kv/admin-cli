@@ -29,6 +29,7 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 	invalidTargets := make(map[string]int)
 
 	for {
+		logInfo("debug_jiashuo:1")
 		target := m.selectNextTargetNode(targets)
 
 		m.updateNodesReplicaInfo(client, table)
