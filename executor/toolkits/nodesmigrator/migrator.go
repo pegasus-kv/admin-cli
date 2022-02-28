@@ -81,7 +81,7 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 var originIndex int32 = -1
 
 func (m *Migrator) selectNextOriginNode() *MigratorNode {
-	currentOriginNode := m.origins[int(atomic.AddInt32(&originIndex, rand.Int31n(100)))%len(m.origins)]
+	currentOriginNode := m.origins[int(atomic.AddInt32(&originIndex, 1))%len(m.origins)]
 	return &MigratorNode{node: currentOriginNode}
 }
 
