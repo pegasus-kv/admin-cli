@@ -9,9 +9,23 @@ import (
 
 	"github.com/XiaoMi/pegasus-go-client/idl/admin"
 	"github.com/pegasus-kv/admin-cli/executor"
+	"github.com/pegasus-kv/admin-cli/util"
 )
 
-func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []string, tables []string, batch bool, concurrent int) error {
+var GlobalBatchTable = false
+var GlobalBatchTarget = false
+
+func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []string, tables []string, batchTable bool,
+	batchTarget bool, targetCount int, concurrent int) error {
+	GlobalBatchTable = batchTable
+	GlobalBatchTarget = batchTarget
+	if len(to) != targetCount {
+		logPanic("please make sure the targets count == `final_target` value")
+	}
+
+	logWarn(fmt.Sprintf("you now migrate to target count will be %d in final, "+
+		"please make sure it is ok! sleep 10s and then start", targetCount))
+
 	nodesMigrator, err := createNewMigrator(client, from, to)
 	if err != nil {
 		return err
@@ -31,6 +45,7 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 	}
 
 	currentOriginNode := nodesMigrator.selectNextOriginNode()
+	currentTargetNodes := nodesMigrator.targets
 	firstOrigin := currentOriginNode
 	var totalRemainingReplica int32 = math.MaxInt32
 	round := -1
@@ -45,6 +60,12 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 		}
 		logInfo(fmt.Sprintf("\n\n*******************[%d|%s]start migrate replicas, remainingReplica=%d*****************",
 			round, currentOriginNode.String(), totalRemainingReplica))
+		if !GlobalBatchTarget {
+			target := nodesMigrator.selectNextTargetNode(nodesMigrator.targets)
+			target.downgradeAllReplicaToSecondary(client)
+			currentTargetNodes = []*util.PegasusNode{target.node}
+		}
+
 		currentOriginNode.downgradeAllReplicaToSecondary(client)
 
 		totalRemainingReplica = 0
@@ -53,21 +74,26 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 		wg.Add(tableCount)
 		for _, tb := range tableList {
 			targetTable := tb
-			if batch {
+			if GlobalBatchTable {
 				go func() {
 					worker, _ := createNewMigrator(client, from, to)
-					remainingCount := worker.run(client, targetTable, round, currentOriginNode, concurrent)
+					remainingCount := worker.run(client, targetTable, round, currentOriginNode, currentTargetNodes, concurrent)
 					atomic.AddInt32(&totalRemainingReplica, int32(remainingCount))
 					wg.Done()
 				}()
 			} else {
-				remainingCount := nodesMigrator.run(client, targetTable, round, currentOriginNode, concurrent)
+				remainingCount := nodesMigrator.run(client, targetTable, round, currentOriginNode, currentTargetNodes, concurrent)
 				atomic.AddInt32(&totalRemainingReplica, int32(remainingCount))
 				wg.Done()
 			}
 		}
 		wg.Wait()
 		currentOriginNode = nodesMigrator.selectNextOriginNode()
+		if !GlobalBatchTarget {
+			target := nodesMigrator.selectNextTargetNode(nodesMigrator.targets)
+			target.downgradeAllReplicaToSecondary(client)
+			currentTargetNodes = []*util.PegasusNode{target.node}
+		}
 		time.Sleep(10 * time.Second)
 	}
 }

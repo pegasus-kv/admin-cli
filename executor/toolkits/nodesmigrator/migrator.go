@@ -23,22 +23,13 @@ type Migrator struct {
 	targets []*util.PegasusNode
 }
 
-func (m *Migrator) run(client *executor.Client, table string, round int, origin *MigratorNode, maxConcurrent int) int {
+func (m *Migrator) run(client *executor.Client, table string, round int, origin *MigratorNode,
+	targets []*util.PegasusNode, maxConcurrent int) int {
 	balanceTargets := make(map[string]int)
 	invalidTargets := make(map[string]int)
-	// downgrade will decrease the `read` influence
-	//
-	// when len(m.targets) == 1, which means only one target, so we can downgrade it
-	// otherwise, when different target is running, downgrade will result in those target's replica downgrade invalid
-	// such as: A node downgrade it, but when B node downgrade, the A node some replica will be updated
-	if len(m.targets) == 1 {
-		target := m.selectNextTargetNode()
-		target.downgradeAllReplicaToSecondary(client)
-		origin.downgradeAllReplicaToSecondary(client)
-	}
 
 	for {
-		target := m.selectNextTargetNode()
+		target := m.selectNextTargetNode(targets)
 
 		m.updateNodesReplicaInfo(client, table)
 		m.updateOngoingActionList()
@@ -94,8 +85,8 @@ func (m *Migrator) selectNextOriginNode() *MigratorNode {
 
 var targetIndex int32 = -1
 
-func (m *Migrator) selectNextTargetNode() *MigratorNode {
-	currentTargetNode := m.targets[int(atomic.AddInt32(&targetIndex, 1))%len(m.targets)]
+func (m *Migrator) selectNextTargetNode(targets []*util.PegasusNode) *MigratorNode {
+	currentTargetNode := targets[int(atomic.AddInt32(&targetIndex, 1))%len(m.targets)]
 	return &MigratorNode{node: currentTargetNode}
 }
 
