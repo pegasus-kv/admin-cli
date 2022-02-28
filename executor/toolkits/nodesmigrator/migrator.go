@@ -3,6 +3,7 @@ package nodesmigrator
 import (
 	"fmt"
 	"math"
+	"math/rand"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -80,14 +81,14 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 var originIndex int32 = -1
 
 func (m *Migrator) selectNextOriginNode() *MigratorNode {
-	currentOriginNode := m.origins[int(atomic.AddInt32(&originIndex, 1))%len(m.origins)]
+	currentOriginNode := m.origins[int(atomic.AddInt32(&originIndex, rand.Int31n(100)))%len(m.origins)]
 	return &MigratorNode{node: currentOriginNode}
 }
 
 var targetIndex int32 = -1
 
 func (m *Migrator) selectNextTargetNode(targets []*util.PegasusNode) *MigratorNode {
-	currentTargetNode := targets[int(atomic.AddInt32(&targetIndex, 1))%len(targets)]
+	currentTargetNode := targets[int(atomic.AddInt32(&targetIndex, rand.Int31n(100)))%len(targets)]
 	return &MigratorNode{node: currentTargetNode}
 }
 
