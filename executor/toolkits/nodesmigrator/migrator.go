@@ -29,15 +29,14 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 	invalidTargets := make(map[string]int)
 
 	for {
-		logDebug("debug_jiashuo:1")
 		target := m.selectNextTargetNode(targets)
 
 		m.updateNodesReplicaInfo(client, table)
 		m.updateOngoingActionList()
 		remainingCount := m.getRemainingReplicaCount(origin)
-		if remainingCount <= 0 || len(balanceTargets)+len(invalidTargets) >= len(m.targets) {
+		if remainingCount <= 0 || len(balanceTargets)+len(invalidTargets) >= len(targets) {
 			logInfo(fmt.Sprintf("[%s]completed(remaining=%d, balance=%d, invalid=%d, total=%d) for no replicas can be migrated",
-				table, remainingCount, len(balanceTargets), len(invalidTargets), len(m.targets)))
+				table, remainingCount, len(balanceTargets), len(invalidTargets), len(targets)))
 			return m.getTotalRemainingReplicaCount()
 		}
 
