@@ -91,11 +91,6 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 		}
 		wg.Wait()
 		currentOriginNode = nodesMigrator.selectNextOriginNode()
-		if !GlobalBatchTarget {
-			target := nodesMigrator.selectNextTargetNode(nodesMigrator.targets)
-			target.downgradeAllReplicaToSecondary(client)
-			currentTargetNodes = []*util.PegasusNode{target.node}
-		}
 		time.Sleep(10 * time.Second)
 	}
 }
