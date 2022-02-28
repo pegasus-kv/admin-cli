@@ -3,6 +3,7 @@ package nodesmigrator
 import (
 	"fmt"
 	"math"
+	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -219,10 +220,8 @@ func (m *Migrator) sendMigrateRequest(client *executor.Client, table string, ori
 		return
 	}
 
-	if from.primaryCount() != 0 {
-		logPanic(fmt.Sprintf("FATAL: the origin[%s] should not exist primary replica", target.node.String()))
-	}
-
+	// migrate start from secondary
+	sort.Sort(from.replicas)
 	var action *Action
 	for _, replica := range from.replicas {
 		action = &Action{

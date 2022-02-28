@@ -62,13 +62,13 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 		}
 		logInfo(fmt.Sprintf("\n\n*******************[%d|%s]start migrate replicas, remainingReplica=%d*****************",
 			round, currentOriginNode.String(), totalRemainingReplica))
+
+		currentOriginNode.downgradeAllReplicaToSecondary(client)
 		if !GlobalBatchTarget {
 			target := nodesMigrator.selectNextTargetNode(nodesMigrator.targets)
 			target.downgradeAllReplicaToSecondary(client)
 			currentTargetNodes = []*util.PegasusNode{target.node}
 		}
-
-		currentOriginNode.downgradeAllReplicaToSecondary(client)
 
 		totalRemainingReplica = 0
 		tableCount := len(tableList)
