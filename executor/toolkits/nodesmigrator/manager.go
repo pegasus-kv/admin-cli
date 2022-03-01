@@ -75,7 +75,7 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 		}
 
 		if !GlobalBatchTarget {
-			if runTargetCount / targetCount >= 1 {
+			if runTargetCount/targetCount >= 1 {
 				balanceFactor++
 			}
 		} else {

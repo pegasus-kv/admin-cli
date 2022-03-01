@@ -92,7 +92,7 @@ func (m *Migrator) selectNextOriginNode() *MigratorNode {
 var targetIndex int32 = -1
 
 func (m *Migrator) selectNextTargetNode(targets []*util.PegasusNode) *MigratorNode {
-	currentTargetNode := targets[int(atomic.AddInt32(&targetIndex, rand.Int31n(100)))%len(targets)]
+	currentTargetNode := targets[int(atomic.AddInt32(&targetIndex, int32(1+rand.Intn(len(targets)))))%len(targets)]
 	return &MigratorNode{node: currentTargetNode}
 }
 
