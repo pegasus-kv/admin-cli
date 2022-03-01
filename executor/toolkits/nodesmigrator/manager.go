@@ -64,7 +64,7 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 			originRound++
 		}
 		logInfo(fmt.Sprintf("\n\n*******************[%d|%s]start migrate replicas, remainingReplica=%d*****************",
-			originRound, currentOriginNode.String(), totalRemainingReplica))
+			balanceFactor, currentOriginNode.String(), totalRemainingReplica))
 
 		currentOriginNode.downgradeAllReplicaToSecondary(client)
 		if !GlobalBatchTarget {
