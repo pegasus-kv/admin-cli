@@ -32,6 +32,10 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 
 	for {
 		target := m.selectNextTargetNode(targets)
+		if target.String() == origin.String() {
+			logInfo(fmt.Sprintf("completed for origin and target is same: %s", origin.String()))
+			return m.getTotalRemainingReplicaCount()
+		}
 
 		m.updateNodesReplicaInfo(client, table)
 		m.updateOngoingActionList()
