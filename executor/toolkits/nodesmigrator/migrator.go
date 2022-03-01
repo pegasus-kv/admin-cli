@@ -25,7 +25,7 @@ type Migrator struct {
 	targets []*util.PegasusNode
 }
 
-func (m *Migrator) run(client *executor.Client, table string, round int, origin *MigratorNode,
+func (m *Migrator) run(client *executor.Client, table string, balanceFactor int, origin *MigratorNode,
 	targets []*util.PegasusNode, maxConcurrent int) int {
 	balanceTargets := make(map[string]int)
 	invalidTargets := make(map[string]int)
@@ -46,7 +46,7 @@ func (m *Migrator) run(client *executor.Client, table string, round int, origin 
 			return m.getTotalRemainingReplicaCount()
 		}
 
-		expectCount := m.getExpectReplicaCount(round)
+		expectCount := m.getExpectReplicaCount(balanceFactor)
 		currentCount := m.getCurrentReplicaCount(target)
 		if currentCount >= expectCount {
 			balanceTargets[target.String()] = 1
@@ -184,12 +184,12 @@ func (m *Migrator) getTotalRemainingReplicaCount() int {
 	return remainingCount
 }
 
-func (m *Migrator) getExpectReplicaCount(round int) int {
+func (m *Migrator) getExpectReplicaCount(balanceFactor int) int {
 	totalReplicaCount := 0
 	for _, node := range m.nodes {
 		totalReplicaCount = totalReplicaCount + len(node.replicas)
 	}
-	return (totalReplicaCount / len(m.targets)) + round
+	return (totalReplicaCount / len(m.targets)) + balanceFactor
 }
 
 func (m *Migrator) existValidReplica(origin *MigratorNode, target *MigratorNode) bool {
