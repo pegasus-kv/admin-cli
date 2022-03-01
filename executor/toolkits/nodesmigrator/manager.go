@@ -50,7 +50,10 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 	currentTargetNodes := nodesMigrator.targets
 	firstOrigin := currentOriginNode
 	var totalRemainingReplica int32 = math.MaxInt32
-	round := -1
+	originRound := -1
+	runTargetCount := 0
+
+	balanceFactor := 0
 	for {
 		if totalRemainingReplica <= 0 {
 			logInfo("\n\n==============completed for all origin nodes has been migrated================")
@@ -58,16 +61,25 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 		}
 
 		if currentOriginNode.String() == firstOrigin.String() {
-			round++
+			originRound++
 		}
 		logInfo(fmt.Sprintf("\n\n*******************[%d|%s]start migrate replicas, remainingReplica=%d*****************",
-			round, currentOriginNode.String(), totalRemainingReplica))
+			originRound, currentOriginNode.String(), totalRemainingReplica))
 
 		currentOriginNode.downgradeAllReplicaToSecondary(client)
 		if !GlobalBatchTarget {
+			runTargetCount++
 			target := nodesMigrator.selectNextTargetNode(nodesMigrator.targets)
 			target.downgradeAllReplicaToSecondary(client)
 			currentTargetNodes = []*util.PegasusNode{target.node}
+		}
+
+		if !GlobalBatchTarget {
+			if runTargetCount == targetCount {
+				balanceFactor++
+			}
+		} else {
+			balanceFactor = originRound
 		}
 
 		totalRemainingReplica = 0
@@ -79,12 +91,12 @@ func MigrateAllReplicaToNodes(client *executor.Client, from []string, to []strin
 			if GlobalBatchTable {
 				go func() {
 					worker, _ := createNewMigrator(client, from, to)
-					remainingCount := worker.run(client, targetTable, round, currentOriginNode, currentTargetNodes, concurrent)
+					remainingCount := worker.run(client, targetTable, balanceFactor, currentOriginNode, currentTargetNodes, concurrent)
 					atomic.AddInt32(&totalRemainingReplica, int32(remainingCount))
 					wg.Done()
 				}()
 			} else {
-				remainingCount := nodesMigrator.run(client, targetTable, round, currentOriginNode, currentTargetNodes, concurrent)
+				remainingCount := nodesMigrator.run(client, targetTable, balanceFactor, currentOriginNode, currentTargetNodes, concurrent)
 				atomic.AddInt32(&totalRemainingReplica, int32(remainingCount))
 				wg.Done()
 			}
