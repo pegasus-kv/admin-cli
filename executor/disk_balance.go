@@ -94,7 +94,9 @@ func DiskBalance(client *Client, replicaServer string, minSize int64, interval i
 		if err != nil {
 			return err
 		}
-		if action.replica.Status != "secondary" {
+
+		err = DiskMigrate(client, replicaServer, action.replica.Gpid, action.from, action.to)
+		if err != nil && action.replica.Status != "secondary" {
 			err := forceAssignReplicaToSecondary(client, replicaServer, action.replica.Gpid)
 			if err != nil {
 				return err
@@ -102,7 +104,7 @@ func DiskBalance(client *Client, replicaServer string, minSize int64, interval i
 			time.Sleep(WaitRunning)
 			continue
 		}
-		err = DiskMigrate(client, replicaServer, action.replica.Gpid, action.from, action.to)
+
 		if err != nil {
 			return fmt.Errorf("migrate(%s) start failed[auto=%v] err = %s", action.toString(), auto, err.Error())
 		}
@@ -120,7 +122,8 @@ func DiskBalance(client *Client, replicaServer string, minSize int64, interval i
 				time.Sleep(WaitRunning)
 				continue
 			}
-			fmt.Printf("migrate(%s) is completed，result=%s, wait[%ds] disk cleaner remove garbage...\n\n", interval, action.toString(), err.Error())
+			fmt.Printf("migrate(%s) is completed，result=%s, wait[%ds] disk cleaner remove garbage...\n\n",
+				action.toString(), err.Error(), interval)
 			break
 		}
 
