@@ -56,8 +56,8 @@ func init() {
 			f.Int64("s", "size", 10<<10, "allow migrate min replica size, default 10GB")
 			f.Bool("a", "auto", false, "auto balance node until the the node is balanced")
 			// todo(jiashuo1) disk cleaner need "pegasus server execute update disk status",
-			// todo(jiashuo1) the interval is 5min by default, it will be reset later
-			f.Int("i", "interval", 300, "wait disk clean garbage replica interval")
+			// todo(jiashuo1) the interval is 10min by default, so now have to wait >= 10min to make sure clean garbage
+			f.Int("i", "interval", 650, "wait disk clean garbage replica interval")
 		},
 		Run: func(c *grumble.Context) error {
 			return executor.DiskBalance(pegasusClient, c.Flags.String("node"), c.Flags.Int64("size"), c.Flags.Int("interval"), c.Flags.Bool("auto"))
