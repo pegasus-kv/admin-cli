@@ -103,27 +103,32 @@ func DiskBalance(client *Client, replicaServer string, minSize int64, auto bool)
 			continue
 		}
 		err = DiskMigrate(client, replicaServer, action.replica.Gpid, action.from, action.to)
-		if err == nil {
-			fmt.Printf("migrate(%s) has started[auto=%v], wait complete...\n", action.toString(), auto)
-			for {
-				// TODO(jiashuo1): using DiskMigrate RPC to query status, consider support queryDiskMigrateStatus RPC
-				err = DiskMigrate(client, replicaServer, action.replica.Gpid, action.from, action.to)
-				if err == nil {
-					time.Sleep(WaitRunning)
-					continue
-				}
-				if strings.Contains(err.Error(), base.ERR_BUSY.String()) {
-					fmt.Printf("migrate(%s) is running, msg=%s, wait complete...\n", action.toString(), err.Error())
-					time.Sleep(WaitRunning)
-					continue
-				}
-				fmt.Printf("migrate(%s) is completed，result=%s, wait disk cleaner remove garbage...\n\n", action.toString(), err.Error())
-				break
-			}
+		if err != nil {
+			return fmt.Errorf("migrate(%s) start failed[auto=%v] err = %s", action.toString(), auto, err.Error())
 		}
+
+		fmt.Printf("migrate(%s) has started[auto=%v], wait complete...\n", action.toString(), auto)
+		for {
+			// TODO(jiashuo1): using DiskMigrate RPC to query status, consider support queryDiskMigrateStatus RPC
+			err = DiskMigrate(client, replicaServer, action.replica.Gpid, action.from, action.to)
+			if err == nil {
+				time.Sleep(WaitRunning)
+				continue
+			}
+			if strings.Contains(err.Error(), base.ERR_BUSY.String()) {
+				fmt.Printf("migrate(%s) is running, msg=%s, wait complete...\n", action.toString(), err.Error())
+				time.Sleep(WaitRunning)
+				continue
+			}
+			fmt.Printf("migrate(%s) is completed，result=%s, wait disk cleaner remove garbage...\n\n", action.toString(), err.Error())
+			break
+		}
+
 		if auto {
 			time.Sleep(WaitCleaning)
 			continue
+		} else {
+			fmt.Printf("you now disable auto-balance[auto=%v], stop and wait manual loop\n\n", auto)
 		}
 		break
 	}
