@@ -65,10 +65,8 @@ func DiskMigrate(client *Client, replicaServer string, pidStr string, from strin
 	return nil
 }
 
-const (
-	WaitRunning  = time.Second * 10 // time for wait migrate complete
-	WaitCleaning = time.Second * 90 // time for wait garbage replica to clean complete
-)
+var WaitRunning = time.Second * 10  // time for wait migrate complete
+var WaitCleaning = time.Second * 90 // time for wait garbage replica to clean complete
 
 // auto balance target node disk usage:
 // -1. change the pegasus server disk cleaner internal for clean temp replica to free disk space in time
@@ -79,7 +77,9 @@ const (
 // -6. start next loop until can't allow to balance the node
 // -7. recover disk cleaner internal if balance complete
 // -8. set meta status to `lively` to balance primary and secondary // TODO(jiashuo1)
-func DiskBalance(client *Client, replicaServer string, minSize int64, auto bool) error {
+func DiskBalance(client *Client, replicaServer string, minSize int64, interval int, auto bool) error {
+	WaitCleaning = time.Second * time.Duration(interval)
+
 	if err := changeDiskCleanerInterval(client, replicaServer, "1"); err != nil {
 		return err
 	}
@@ -127,9 +127,10 @@ func DiskBalance(client *Client, replicaServer string, minSize int64, auto bool)
 		if auto {
 			time.Sleep(WaitCleaning)
 			continue
-		} else {
-			fmt.Printf("you now disable auto-balance[auto=%v], stop and wait manual loop\n\n", auto)
 		}
+
+		time.Sleep(WaitCleaning)
+		fmt.Printf("you now disable auto-balance[auto=%v], stop and wait manual loop\n\n", auto)
 		break
 	}
 	return nil
