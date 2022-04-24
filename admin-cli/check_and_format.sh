@@ -20,13 +20,13 @@
 #
 
 PROJECT_DIR=$(dirname "${SCRIPT_DIR}")
-cd "${PROJECT_DIR}" || exit 1
+cd "${PROJECT_DIR}/admin-cli" || exit 1
 
-if [ ! -f "${PROJECT_DIR}"/golangci-lint-1.35.2-linux-amd64/golangci-lint ]; then
+if [ ! -f "${PROJECT_DIR}"/admin-cli/golangci-lint-1.35.2-linux-amd64/golangci-lint ]; then
     wget https://github.com/golangci/golangci-lint/releases/download/v1.35.2/golangci-lint-1.35.2-linux-amd64.tar.gz
     tar -xzvf golangci-lint-1.35.2-linux-amd64.tar.gz
 fi
 
-gofmt -l -w .
+gofmt -l -w ./admin-cli
 go mod tidy
 golangci-lint-1.35.2-linux-amd64/golangci-lint run -v -E gofmt -E golint
