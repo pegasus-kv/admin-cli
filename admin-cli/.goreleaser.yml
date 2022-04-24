@@ -8,5 +8,5 @@ builds:
       - arm64
     goarm:
       - 7
-    main: ./admin-cli/main.go
+    main: ./main.go
     binary: admin-cli
