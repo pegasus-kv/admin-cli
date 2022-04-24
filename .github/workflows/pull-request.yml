@@ -23,7 +23,7 @@ jobs:
         with:
           fetch-depth: 1
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
+        uses: golangci/golangci-lint-action@v3
         working-directory: ./admin-cli
         with:
           version: v1.29
