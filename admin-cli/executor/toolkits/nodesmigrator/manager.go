@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/XiaoMi/pegasus-go-client/idl/admin"
-	"github.com/pegasus-kv/admin-cli/executor"
-	"github.com/pegasus-kv/admin-cli/util"
+	"github.com/pegasus-kv/admin-cli/admin-cli/executor"
+	"github.com/pegasus-kv/admin-cli/admin-cli/util"
 )
 
 var GlobalBatchTable = false

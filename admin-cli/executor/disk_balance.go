@@ -30,8 +30,8 @@ import (
 	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/XiaoMi/pegasus-go-client/idl/radmin"
 	"github.com/XiaoMi/pegasus-go-client/session"
-	adminClient "github.com/pegasus-kv/admin-cli/client"
-	"github.com/pegasus-kv/admin-cli/util"
+	adminClient "github.com/pegasus-kv/admin-cli/admin-cli/client"
+	"github.com/pegasus-kv/admin-cli/admin-cli/util"
 )
 
 func DiskMigrate(client *Client, replicaServer string, pidStr string, from string, to string) error {

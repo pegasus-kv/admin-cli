@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pegasus-kv/admin-cli/tabular"
+	"github.com/pegasus-kv/admin-cli/admin-cli/tabular"
 )
 
 type PartitionStruct struct {

@@ -24,8 +24,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/pegasus-kv/admin-cli/client"
-	"github.com/pegasus-kv/admin-cli/util"
+	"github.com/pegasus-kv/admin-cli/admin-cli/client"
+	"github.com/pegasus-kv/admin-cli/admin-cli/util"
 	"github.com/pegasus-kv/collector/aggregate"
 )
 

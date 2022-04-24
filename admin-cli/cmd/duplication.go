@@ -24,8 +24,8 @@ import (
 
 	"github.com/XiaoMi/pegasus-go-client/idl/admin"
 	"github.com/desertbit/grumble"
-	"github.com/pegasus-kv/admin-cli/executor"
-	"github.com/pegasus-kv/admin-cli/shell"
+	"github.com/pegasus-kv/admin-cli/admin-cli/executor"
+	"github.com/pegasus-kv/admin-cli/admin-cli/shell"
 )
 
 func init() {

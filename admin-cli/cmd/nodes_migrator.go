@@ -23,8 +23,8 @@ import (
 	"strings"
 
 	"github.com/desertbit/grumble"
-	"github.com/pegasus-kv/admin-cli/executor/toolkits/nodesmigrator"
-	"github.com/pegasus-kv/admin-cli/shell"
+	"github.com/pegasus-kv/admin-cli/admin-cli/executor/toolkits/nodesmigrator"
+	"github.com/pegasus-kv/admin-cli/admin-cli/shell"
 )
 
 func init() {

@@ -24,8 +24,8 @@ import (
 
 	"github.com/XiaoMi/pegasus-go-client/session"
 	"github.com/olekukonko/tablewriter"
-	"github.com/pegasus-kv/admin-cli/client"
-	"github.com/pegasus-kv/admin-cli/util"
+	"github.com/pegasus-kv/admin-cli/admin-cli/client"
+	"github.com/pegasus-kv/admin-cli/admin-cli/util"
 )
 
 // RemoteCommand command.

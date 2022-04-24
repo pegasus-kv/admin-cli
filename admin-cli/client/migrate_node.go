@@ -27,7 +27,7 @@ import (
 	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/XiaoMi/pegasus-go-client/idl/replication"
 	"github.com/XiaoMi/pegasus-go-client/session"
-	"github.com/pegasus-kv/admin-cli/util"
+	"github.com/pegasus-kv/admin-cli/admin-cli/util"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -27,8 +27,8 @@ import (
 	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/XiaoMi/pegasus-go-client/idl/radmin"
 	"github.com/XiaoMi/pegasus-go-client/session"
-	"github.com/pegasus-kv/admin-cli/tabular"
-	"github.com/pegasus-kv/admin-cli/util"
+	"github.com/pegasus-kv/admin-cli/admin-cli/tabular"
+	"github.com/pegasus-kv/admin-cli/admin-cli/util"
 )
 
 type DiskInfoType string

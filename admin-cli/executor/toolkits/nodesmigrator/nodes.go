@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/XiaoMi/pegasus-go-client/idl/base"
-	migrator "github.com/pegasus-kv/admin-cli/client"
-	"github.com/pegasus-kv/admin-cli/executor"
-	"github.com/pegasus-kv/admin-cli/util"
+	migrator "github.com/pegasus-kv/admin-cli/admin-cli/client"
+	"github.com/pegasus-kv/admin-cli/admin-cli/executor"
+	"github.com/pegasus-kv/admin-cli/admin-cli/util"
 )
 
 type Replica struct {

@@ -1,4 +1,4 @@
-module github.com/pegasus-kv/admin-cli
+module github.com/pegasus-kv/admin-cli/admin-cli
 
 go 1.14
 

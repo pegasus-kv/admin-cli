@@ -11,9 +11,9 @@ import (
 
 	"github.com/XiaoMi/pegasus-go-client/idl/base"
 	"github.com/XiaoMi/pegasus-go-client/session"
-	migrator "github.com/pegasus-kv/admin-cli/client"
-	"github.com/pegasus-kv/admin-cli/executor"
-	"github.com/pegasus-kv/admin-cli/util"
+	migrator "github.com/pegasus-kv/admin-cli/admin-cli/client"
+	"github.com/pegasus-kv/admin-cli/admin-cli/executor"
+	"github.com/pegasus-kv/admin-cli/admin-cli/util"
 )
 
 type Migrator struct {
